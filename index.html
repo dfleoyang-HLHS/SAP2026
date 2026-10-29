@@ -62,6 +62,9 @@ nav.steps button{border:1px solid transparent;background:none;padding:6px 12px;b
 nav.steps button .n{font-family:var(--f-mono);font-size:.78rem;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--line)}
 nav.steps button[aria-current="step"]{color:var(--accent);border-color:var(--accent);background:var(--accent-soft)}
 nav.steps button[aria-current="step"] .n{background:var(--accent);color:var(--surface);border-color:var(--accent)}
+nav.steps .navadmin{display:flex;align-items:center;padding:6px 14px;border-radius:999px;border:1px dashed var(--accent);color:var(--accent);text-decoration:none;font-weight:500;margin-left:6px}
+nav.steps .navadmin:hover{background:var(--accent-soft)}
+.navback{color:var(--accent);text-decoration:none;font-size:.9rem;white-space:nowrap}
 
 main{padding-block:28px 64px}
 section.view{display:grid;gap:22px}
@@ -530,7 +533,11 @@ const fmtTime = t=>t?new Date(t).toLocaleString("zh-TW",{month:"numeric",day:"nu
 /* ---------- 頂部 ---------- */
 const STEPS=["選擇方案","導讀與盤點","診斷結果","年度改善方案"];
 function renderTop(){
-  $("#steps").innerHTML=STEPS.map((s,i)=>`<button data-step="${i}" ${UI.step===i?'aria-current="step"':""}><span class="n">${i+1}</span>${s}</button>`).join("");
+  // 管理者專區只在 GitHub Pages 版（Firebase）出現，且只給 config.js 的 admins 看到
+  const admins=((window.SAP_CONFIG&&window.SAP_CONFIG.admins)||[]).map(x=>String(x).toLowerCase());
+  const isAdmin=BACKEND==="firebase"&&fbUser&&admins.includes(String(fbUser.email||"").toLowerCase());
+  $("#steps").innerHTML=STEPS.map((s,i)=>`<button data-step="${i}" ${UI.step===i?'aria-current="step"':""}><span class="n">${i+1}</span>${s}</button>`).join("")
+    +(isAdmin?`<a class="navadmin" href="admin.html">管理者專區</a>`:"");
   const name=D().profile.name;
   $("#brandsub").textContent=`${PLAN[UI.plan].name}${name?"｜"+name:""}｜實施指南 2.0 討論版`;
   const sy=$("#sync");
