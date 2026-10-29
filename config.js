@@ -6,7 +6,7 @@ window.SAP_CONFIG = {
   // 同一個網域的成員會自動進入同一個學校工作區。
   allowedSuffix: "edu.tw",
   // 管理者彙整頁（admin.html）可讀取所有學校資料的帳號；需與 firestore.rules 的 isAdmin() 一致。
-  admins: ["dfleoyang@hlhs.hlc.edu.tw", "ponponmai@hlhs.hlc.edu.tw", "pychen@ntnu.edu.tw"],
+  admins: ["dfleoyang@hlhs.hlc.edu.tw", "ponponmai@hlhs.hlc.edu.tw", "pychen@ntnu.edu.tw", "principallin@sshs.tc.edu.tw"],
   firebase: {
   apiKey: "AIzaSyCKAJnUSfVMFy5r_iKXUUx-jqFZrGG68RI",
   authDomain: "sap2026-diag.firebaseapp.com",
