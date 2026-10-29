@@ -1,0 +1,836 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>:root{color-scheme:light}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>數位前導指南診斷</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@600;700&family=Noto+Sans+TC:wght@400;500;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* 版面：頂部固定四步驟列，主欄 1080px；盤點卡片採「代碼欄＋內文＋狀態列」三段，對應原指南七欄表的閱讀順序 */
+:root{
+  --bg:#f3f5f8; --surface:#ffffff; --sunk:#e9edf2; --ink:#18212c; --muted:#596677; --line:#d5dce5;
+  --accent:#1f4e8c; --accent-soft:#e3ebf6; --mark:#b3261e;
+  --done:#2c7a4b; --part:#b06f12; --no:#b3261e; --tbd:#6a4ea3; --na:#8892a0;
+  --kr:#1f4e8c; --ec:#16727a; --sl:#3c7a2c; --tt:#a85a12; --as:#6a4ea3;
+  --f-display:"Noto Serif TC","Songti TC","PMingLiU",serif;
+  --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+  --r:6px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#11161d; --surface:#19202a; --sunk:#222b37; --ink:#e4e9ef; --muted:#9ba7b6; --line:#2e3946;
+  --accent:#86ade8; --accent-soft:#1f2c40; --mark:#f08a80;
+  --done:#5cbf84; --part:#e0a548; --no:#f08a80; --tbd:#b39ae6; --na:#7d8796;
+  --kr:#86ade8; --ec:#5cc0c8; --sl:#86c46f; --tt:#e5a160; --as:#b39ae6; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#11161d; --surface:#19202a; --sunk:#222b37; --ink:#e4e9ef; --muted:#9ba7b6; --line:#2e3946;
+  --accent:#86ade8; --accent-soft:#1f2c40; --mark:#f08a80;
+  --done:#5cbf84; --part:#e0a548; --no:#f08a80; --tbd:#b39ae6; --na:#7d8796;
+  --kr:#86ade8; --ec:#5cc0c8; --sl:#86c46f; --tt:#e5a160; --as:#b39ae6; color-scheme:dark}
+
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.7}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+.wrap{max-width:1080px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;line-height:1.35;margin:0}
+h1{font-size:1.6rem} h2{font-size:1.3rem} h3{font-size:1.05rem}
+p{margin:0}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.small{font-size:.86rem}
+
+/* 頂部 */
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:9;background:var(--surface);border-bottom:1px solid var(--line)}
+header.top .wrap{display:flex;flex-wrap:wrap;align-items:center;gap:8px 20px;padding-block:10px}
+.brand{display:flex;flex-direction:column;min-width:0}
+.brand b{font-family:var(--f-display);font-size:1.08rem}
+.brand span{font-size:.8rem;color:var(--muted)}
+nav.steps{display:flex;gap:4px;flex-wrap:wrap;margin-left:auto}
+nav.steps button{border:1px solid transparent;background:none;padding:6px 12px;border-radius:999px;color:var(--muted);display:flex;gap:6px;align-items:center}
+nav.steps button .n{font-family:var(--f-mono);font-size:.78rem;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--line)}
+nav.steps button[aria-current="step"]{color:var(--accent);border-color:var(--accent);background:var(--accent-soft)}
+nav.steps button[aria-current="step"] .n{background:var(--accent);color:var(--surface);border-color:var(--accent)}
+
+main{padding-block:28px 64px}
+section.view{display:grid;gap:22px}
+.lede{max-width:65ch;color:var(--muted)}
+.banner{border:1px dashed var(--part);background:color-mix(in srgb,var(--part) 9%,var(--surface));padding:10px 14px;border-radius:var(--r);display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px 20px;display:grid;gap:14px;min-width:0}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:16px}
+.label{font-size:.78rem;letter-spacing:.08em;color:var(--muted);font-weight:500}
+
+/* 方案選擇 */
+.choice{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:12px}
+.choice button{text-align:left;background:var(--surface);border:1.5px solid var(--line);border-radius:var(--r);padding:14px 16px;display:grid;gap:4px}
+.choice button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.choice button b{font-family:var(--f-display);font-size:1.05rem}
+.choice button span{font-size:.86rem;color:var(--muted)}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 14px}
+.seg button[aria-pressed="true"]{border-color:var(--accent);color:var(--accent);background:var(--accent-soft);font-weight:500}
+.field{display:grid;gap:6px}
+input[type=text],select,textarea{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:7px 10px;min-width:0;width:100%}
+textarea{resize:vertical}
+
+.dimlegend{display:grid;gap:8px}
+.dimlegend div{display:flex;gap:10px;align-items:baseline}
+.chip{font-family:var(--f-mono);font-size:.74rem;padding:1px 7px;border-radius:4px;border:1px solid currentColor;white-space:nowrap}
+.d-KR{color:var(--kr)} .d-EC{color:var(--ec)} .d-SL{color:var(--sl)} .d-TT{color:var(--tt)} .d-AS{color:var(--as)}
+.law{border-left:3px solid var(--mark);padding:2px 0 2px 12px}
+ol.flow{margin:0;padding-left:1.3em;display:grid;gap:6px}
+
+.btnrow{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.btn{border:1px solid var(--accent);background:var(--accent);color:var(--surface);padding:8px 18px;border-radius:var(--r);font-weight:500}
+.btn.ghost{background:var(--surface);color:var(--accent)}
+.btn.quiet{border-color:var(--line);background:var(--surface);color:var(--ink);font-weight:400}
+
+/* 盤點 */
+.stagetabs{display:flex;gap:0;overflow-x:auto;border-bottom:1px solid var(--line)}
+.stagetabs button{background:none;border:0;border-bottom:3px solid transparent;padding:10px 16px 8px;display:grid;gap:2px;text-align:left;white-space:nowrap;color:var(--muted)}
+.stagetabs button b{font-family:var(--f-display);color:var(--ink);font-size:.98rem}
+.stagetabs button[aria-selected="true"]{border-bottom-color:var(--accent)}
+.stagetabs button[aria-selected="true"] b{color:var(--accent)}
+.stagetabs .bar{height:3px;background:var(--sunk);border-radius:2px;overflow:hidden;margin-top:4px}
+.stagetabs .bar i{display:block;height:100%;background:var(--accent)}
+.stagehead{display:grid;grid-template-columns:1fr auto;gap:16px;align-items:start}
+@media (max-width:640px){.stagehead{grid-template-columns:1fr}}
+.qs{margin:0;padding-left:1.2em;display:grid;gap:4px;color:var(--muted)}
+.progress{font-family:var(--f-mono);font-size:.9rem;text-align:right}
+.filters{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.filters button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:3px 12px;font-size:.88rem}
+.filters button[aria-pressed="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+
+.dimgroup{display:grid;gap:10px}
+.dimgroup>h3{display:flex;gap:10px;align-items:center;font-size:1rem;padding-top:6px}
+.item{display:grid;grid-template-columns:92px 1fr;gap:4px 16px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;border-left:4px solid var(--line)}
+.item[data-s="done"]{border-left-color:var(--done)} .item[data-s="part"]{border-left-color:var(--part)}
+.item[data-s="no"]{border-left-color:var(--no)} .item[data-s="tbd"]{border-left-color:var(--tbd)} .item[data-s="na"]{border-left-color:var(--na);opacity:.75}
+.item .code{font-family:var(--f-mono);font-size:.86rem;padding-top:2px}
+.item .code small{display:block;font-family:var(--f-body);color:var(--muted);font-size:.76rem}
+.item .body{display:grid;gap:6px;min-width:0}
+.item .t{font-weight:500}
+.item .nt{color:var(--muted);font-size:.9rem}
+.tags{display:flex;flex-wrap:wrap;gap:6px}
+.tag{font-size:.74rem;padding:0 7px;border-radius:4px;background:var(--sunk);color:var(--muted)}
+.tag.new{background:color-mix(in srgb,var(--mark) 12%,var(--surface));color:var(--mark)}
+.tag.g{background:var(--accent-soft);color:var(--accent)}
+.tag.opt{border:1px dashed var(--muted);background:none}
+.status{grid-column:2;display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding-top:4px}
+.status button{border:1px solid var(--line);background:var(--surface);border-radius:4px;padding:2px 10px;font-size:.86rem}
+.status button[aria-pressed="true"][data-v="done"]{background:var(--done);border-color:var(--done);color:var(--surface)}
+.status button[aria-pressed="true"][data-v="part"]{background:var(--part);border-color:var(--part);color:var(--surface)}
+.status button[aria-pressed="true"][data-v="no"]{background:var(--no);border-color:var(--no);color:var(--surface)}
+.status button[aria-pressed="true"][data-v="tbd"]{background:var(--tbd);border-color:var(--tbd);color:var(--surface)}
+.status button[aria-pressed="true"][data-v="na"]{background:var(--na);border-color:var(--na);color:var(--surface)}
+.status .addnote{margin-left:auto;background:none;border:0;color:var(--accent);font-size:.84rem}
+.item textarea{grid-column:2;font-size:.88rem}
+@media (max-width:560px){.item{grid-template-columns:1fr}.status,.item textarea{grid-column:1}}
+details.refs summary{cursor:pointer;color:var(--accent)}
+details.refs ul{margin:8px 0 0;padding-left:1.2em;display:grid;gap:2px;font-size:.88rem;color:var(--muted)}
+.pager{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+
+/* 診斷 */
+.verdict{display:grid;gap:8px;padding:20px;border-radius:var(--r);background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 35%,var(--line))}
+.verdict .big{font-family:var(--f-display);font-size:1.45rem}
+.tablebox{overflow-x:auto}
+table.heat{border-collapse:separate;border-spacing:4px;width:100%;min-width:620px;font-variant-numeric:tabular-nums}
+table.heat th{font-weight:500;font-size:.85rem;color:var(--muted);text-align:left;padding:4px 6px}
+table.heat td{border-radius:4px;padding:8px 10px;text-align:center;font-family:var(--f-mono);font-size:.92rem;background:var(--sunk)}
+table.heat td small{display:block;font-family:var(--f-body);font-size:.72rem;color:var(--muted)}
+table.heat th.st b{display:block;font-family:var(--f-display);color:var(--ink);font-size:.95rem}
+.pill{display:inline-block;font-size:.76rem;padding:1px 9px;border-radius:999px;border:1px solid currentColor;font-family:var(--f-body)}
+.v-stable{color:var(--done)} .v-progress{color:var(--part)} .v-start{color:var(--no)} .v-unrated{color:var(--tbd)} .v-na{color:var(--na)}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:.82rem;color:var(--muted)}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;margin-right:4px}
+.dimbars{display:grid;gap:10px}
+.dimbar{display:grid;grid-template-columns:110px 1fr 56px;gap:10px;align-items:center;font-size:.9rem}
+.dimbar .track{height:10px;background:var(--sunk);border-radius:5px;overflow:hidden;display:flex}
+.dimbar .track i{display:block;height:100%}
+.dimbar .pct{font-family:var(--f-mono);text-align:right}
+
+/* 方案 */
+.sug{display:grid;gap:8px}
+.sugitem{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;align-items:start;padding:10px 12px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
+.sugitem input{margin-top:5px;width:18px;height:18px;accent-color:var(--accent)}
+.sugitem .nt{color:var(--muted);font-size:.88rem}
+.sugitem label{display:grid;gap:2px;cursor:pointer;min-width:0}
+.counter{font-family:var(--f-mono)}
+.counter.warn{color:var(--mark)}
+.planrow{display:grid;gap:10px;border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;background:var(--surface)}
+.planrow .head{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.planrow .fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:10px}
+.planrow .x{margin-left:auto;background:none;border:0;color:var(--muted);font-size:.85rem}
+.empty{border:1px dashed var(--line);border-radius:var(--r);padding:22px;text-align:center;color:var(--muted)}
+#copyout{font-family:var(--f-mono);font-size:.82rem}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--surface);padding:8px 18px;border-radius:999px;font-size:.9rem;z-index:20}
+@media (prefers-reduced-motion:no-preference){.item,.sugitem{transition:border-color .15s}}
+
+/* 共用紀錄 */
+.sync{font-size:.8rem;display:inline-flex;align-items:center;gap:6px;padding:2px 10px;border-radius:999px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+.sync i{width:8px;height:8px;border-radius:50%;background:var(--na)}
+.sync.on i{background:var(--done)} .sync.local i{background:var(--part)} .sync.ro i{background:var(--tbd)}
+.schools{display:flex;flex-wrap:wrap;gap:8px}
+.schools button{border:1.5px solid var(--line);background:var(--surface);border-radius:var(--r);padding:8px 14px;text-align:left;display:grid;gap:0}
+.schools button small{color:var(--muted);font-size:.78rem}
+.schools button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.newschool{display:flex;gap:8px;flex-wrap:wrap}
+.newschool input{flex:1 1 220px;width:auto}
+.who{grid-column:2;font-size:.78rem;color:var(--muted)}
+@media (max-width:560px){.who{grid-column:1}}
+.app-ro .status button[data-v],.app-ro .addnote{pointer-events:none;opacity:.55}
+.people{display:flex;flex-wrap:wrap;gap:8px 14px;font-size:.88rem}
+.people span{display:inline-flex;gap:6px;align-items:center}
+.people img{width:22px;height:22px;border-radius:50%}
+</style>
+
+<header class="top"><div class="wrap">
+  <div class="brand"><b>數位前導指南診斷</b><span id="brandsub">混成學習 α-1・跨校遠距共授 α-2｜實施指南 2.0 討論版</span></div>
+  <span class="sync" id="sync"><i></i><span>連線中</span></span>
+  <nav class="steps" id="steps" aria-label="步驟"></nav>
+</div></header>
+
+<main class="wrap" id="app"></main>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+const DATA = {"a1":[{"n":0,"items":[{"code":"KR-0-1","dim":"KR","title":"數位科技融入教學、數位學習議題納入教師社群討論、啟動進行數位學習課程與教學設計之準備。","note":"並依各面向盤點學校現況，選定本學年優先改善項目與預期成果。","new":false,"gamma":[],"cites":[],"key":"KR-0-1"},{"code":"EC-0-1","dim":"EC","title":"建置單槍投影機、電子白板或智慧大屏。","note":"","new":false,"gamma":[],"cites":[],"key":"EC-0-1"},{"code":"EC-0-2","dim":"EC","title":"提供電腦、筆記型電腦...等3C載具。","note":"依教學與學習需求盤點載具數量、設備狀態及借用需求。","new":false,"gamma":[],"cites":[],"key":"EC-0-2"},{"code":"EC-0-3","dim":"EC","title":"建置基礎的網路設備。","note":"檢核教學區WiFi覆蓋及多載具同時連線需求，於開學前完成帳號登入與認證測試。","new":false,"gamma":[],"cites":[],"key":"EC-0-3"},{"code":"SL-0-1","dim":"SL","title":"學生具備使用數位科技的基本能力，如：能熟悉電腦、載具、文書軟體、帳號登入等資訊軟硬體的基本操作。","note":"","new":false,"gamma":[],"cites":[],"key":"SL-0-1"},{"code":"SL-0-2","dim":"SL","title":"學生透過教學簡報或影片等多媒體進行學習。","note":"","new":false,"gamma":[],"cites":[],"key":"SL-0-2"},{"code":"SL-0-3","dim":"SL","title":"學生課堂上有機會使用互動軟體進行學習。","note":"","new":false,"gamma":[],"cites":[],"key":"SL-0-3"},{"code":"SL-0-4","dim":"SL","title":"學生認識數位學習及AI使用的基本約定，知道個人資料保護、資訊查證與遇到問題時的求助方式。","note":"","new":true,"gamma":[],"cites":["4-5；4-6"],"key":"SL-0-4"},{"code":"TT-0-1","dim":"TT","title":"教師具備使用數位科技的基本能力，如：能熟悉電腦、載具、文書軟體、帳號登入等資訊軟硬體的基本操作。","note":"","new":false,"gamma":[],"cites":[],"key":"TT-0-1"},{"code":"TT-0-2","dim":"TT","title":"透過教學軟體(如簡報投影片、影片或動畫)或科技設備輔助教學。","note":"","new":false,"gamma":[],"cites":[],"key":"TT-0-2"},{"code":"TT-0-3","dim":"TT","title":"教師能依學生學習需求辨識適用的數位工具，認識AI生成內容的限制，查核教材內容後採用。","note":"","new":true,"gamma":[],"cites":["4-4，頁67至68；4-5，第1、2點"],"key":"TT-0-3"},{"code":"AS-0-1","dim":"AS","title":"學校辦理或提供教師數位融入教學的專業增能。","note":"依教師先備能力與需求安排基礎操作、數位素養及AI基本素養支持。","new":false,"gamma":[],"cites":[],"key":"AS-0-1"},{"code":"AS-0-2","dim":"AS","title":"學校建置數位融入教學的學習環境。","note":"","new":false,"gamma":[],"cites":[],"key":"AS-0-2"},{"code":"AS-0-3","dim":"AS","title":"與師長、家長及學生共同訂定以學習為核心且可執行之載具使用及借用規範。","note":"並共同訂定基本AI使用約定，涵蓋使用情境、查證、成果揭露、個資保護及求助管道。使用AI前確認工具適齡、帳號條件及家長知情與同意機制。","new":false,"gamma":[],"cites":["4-5，第5、7點；4-6，前言、第5點"],"key":"AS-0-3"},{"code":"AS-0-4","dim":"AS","title":"評估與擇選可歷程性紀錄的數位學習平臺。","note":"同時評估授權條件、資料匯出方式及後續維運成本。","new":false,"gamma":[],"cites":["4-4，頁67至68"],"key":"AS-0-4"},{"code":"AS-0-5","dim":"AS","title":"由既有數位核心小組統籌行政與技術分工，盤點學習資料的來源、用途及管理責任，建立必要的交接文件。","note":"AI依課程需要選用，不要求所有師生使用相同工具。","new":true,"gamma":[],"cites":["4-4，頁59、67至68"],"key":"AS-0-5"}],"refs":[{"code":"X1-1","text":"學校在數位環境增置足夠軟硬體設備(例如：網路……等)。"},{"code":"X1-2","text":"學校能增置足夠的教師教學軟硬體設備。"},{"code":"X1-4","text":"學校為維護數位環境能列出檢核項目及時程安排。"},{"code":"X1-6","text":"學校設置專業人員解決複雜的網路與設備問題。"},{"code":"X2-1","text":"學校成立數位核心小組(成員包括校長、主任、學科領域召集人)。"},{"code":"X2-2","text":"學校數位核心小組能負責數位環境之規劃、全校性數位整體推動工作。"},{"code":"X2-6","text":"學校能持續定期檢視並調整推動數位化之工作。"},{"code":"Y1-1","text":"學校能提供教師增能，解決一般教室網路與設備問題。"},{"code":"Y2-1","text":"教師能發展出數位課程模組。"},{"code":"Y2-2","text":"教師能應用數位融入課程設計與教學活動。學校可運用混成教學準備度調查了解現況，作為發展起點（文獻4-2）。各構面可分別盤點，資料不足者註明待確認。"}]},{"n":1,"items":[{"code":"KR-1-1","dim":"KR","title":"至少組織1個數位社群或現有1個教師社群聚焦於課程中融入數位教學。","note":"","new":false,"gamma":[],"cites":[],"face":"教師面","key":"KR-1-1"},{"code":"KR-1-2","dim":"KR","title":"每一個數位社群應用數位科技到至少1門課程。","note":"(包含共讀教育部中小學數位教學指引3.0版)社群保存實作教案、學生作品或回饋紀錄，作為增能轉化為課堂教學的佐證。增讀《115年中小學教師數位與AI教學指引》相關章節。","new":false,"gamma":[],"cites":["4-4"],"face":"教師面","key":"KR-1-2"},{"code":"KR-1-3","dim":"KR","title":"校內25%學生的學習應用到數位工具。","note":"","new":false,"gamma":[],"cites":[],"face":"學生面","key":"KR-1-3"},{"code":"KR-1-4","dim":"KR","title":"校內25%行政人員會應用數位科技於行政工作組織溝通。","note":"人數與比例請註明母數及計算期間。","new":false,"gamma":[],"cites":[],"face":"行政面","key":"KR-1-4"},{"code":"EC-1-1","dim":"EC","title":"維護數位科技設備、工具與行動載具。","note":"建立設備借用、維修與故障回報流程，並提供必要的替代學習安排。","new":false,"gamma":[],"cites":[],"key":"EC-1-1"},{"code":"EC-1-2","dim":"EC","title":"由學校提供載具或學生能自帶載具協助自主學習。","note":"對無自備設備、帳號或不同意使用AI者，提供可達成相同學習目標的替代安排。","new":false,"gamma":[],"cites":["4-4，頁67至68"],"key":"EC-1-2"},{"code":"EC-1-3","dim":"EC","title":"學校網路環境能支持師生順暢進行課堂教學與數位學習。","note":"以實際上課情境檢核多人同時使用時的連線品質，追蹤改善結果。","new":false,"gamma":[],"cites":[],"key":"EC-1-3"},{"code":"EC-1-4","dim":"EC","title":"提供可作為歷程性紀錄的數位學習平臺，並持續維護。","note":"(說明：數位學習平臺。例如：Google Classroom、酷課雲、因材網、酷英、均一都是可列入的範圍。)","new":false,"gamma":[],"cites":[],"key":"EC-1-4"},{"code":"SL-1-1","dim":"SL","title":"學生能運用數位學習平臺操作，進行預習或精熟學習內容，並完成各項學習任務。","note":"","new":false,"gamma":[],"cites":[],"key":"SL-1-1"},{"code":"SL-1-2","dim":"SL","title":"學生能運用數位工具觀摩其他同學的學習作品，並進行交流與反思。","note":"","new":false,"gamma":[],"cites":[],"key":"SL-1-2"},{"code":"SL-1-3","dim":"SL","title":"學生能善用載具的各種功能，將載具變成日常學習工具。","note":"","new":false,"gamma":[],"cites":[],"key":"SL-1-3"},{"code":"SL-1-4","dim":"SL","title":"學習成為數位公民（註1），認識網路使用的權利、義務與倫理，遵守數位學習及AI基本使用約定。","note":"","new":false,"gamma":[],"cites":["4-5，第6、8點；4-6，第6點"],"key":"SL-1-4"},{"code":"SL-1-5","dim":"SL","title":"發展媒體識讀的能力，能分辨事實真偽，能正確地解讀所收到的資訊。","note":"在教師引導下查核AI生成內容的重要資訊與來源，不直接將AI產出視為正確答案。","new":false,"gamma":[],"cites":["4-6，第1、2點"],"key":"SL-1-5"},{"code":"SL-1-6","dim":"SL","title":"學生能依任務要求說明AI協助的範圍，以自己的理解完成學習任務。","note":"","new":true,"gamma":[],"cites":["4-6，第6點"],"key":"SL-1-6"},{"code":"TT-1-1","dim":"TT","title":"教師運用數位學習平臺功能，安排學習活動，如：上傳學習資源材料或課程包，供學生學習並進行非即時的師生互動。","note":"","new":false,"gamma":[],"cites":[],"key":"TT-1-1"},{"code":"TT-1-2","dim":"TT","title":"教師運用數位學習平臺讓學生進行分組學習任務，並將作品或成果上傳至數位學習平臺。","note":"","new":false,"gamma":[],"cites":[],"key":"TT-1-2"},{"code":"TT-1-3","dim":"TT","title":"教師運用數位學習平臺指派預習和課後作業。","note":"說明預習、課堂活動與課後任務的關聯，以及各項任務可使用AI的範圍。依任務目標選擇不使用、限制步驟或可協作使用AI，並事先告知學生。","new":false,"gamma":[],"cites":["4-4，頁59"],"key":"TT-1-3"},{"code":"TT-1-4","dim":"TT","title":"教師運用數位學習平臺蒐集學生學習歷程與結果，據以調整教學策略。","note":"結合課堂觀察與學生回饋，辨識學習困難並提供適切支持。","new":false,"gamma":[],"cites":["4-7，第2、4條"],"key":"TT-1-4"},{"code":"AS-1-1","dim":"AS","title":"學校清楚論述與傳達數位轉型的目的與願景。","note":"","new":false,"gamma":[],"cites":[],"key":"AS-1-1"},{"code":"AS-1-2","dim":"AS","title":"根據使用需求評估改善學習平臺功能和了解使用現況。","note":"","new":false,"gamma":[],"cites":[],"key":"AS-1-2"},{"code":"AS-1-3","dim":"AS","title":"協助教師增能以熟悉平臺的操作與功能、合作學習與差異化教學。","note":"依教師能力提供分階支持，結合既有社群共備與課堂實作，降低重複研習負擔。","new":false,"gamma":[],"cites":[],"key":"AS-1-3"},{"code":"AS-1-4","dim":"AS","title":"持續宣導與滾動修正有關數位學習等使用規範。","note":"涵蓋AI使用、資訊查證、成果揭露及個資保護，並蒐集實施問題作為修正依據。","new":false,"gamma":[],"cites":["4-5，第5至8點"],"key":"AS-1-4"},{"code":"AS-1-5","dim":"AS","title":"維持親師溝通管道。","note":"說明數位學習與AI使用安排，以及學習資料蒐集的目的與範圍。","new":false,"gamma":[],"cites":["4-5，第5點"],"key":"AS-1-5"},{"code":"AS-1-6","dim":"AS","title":"整合既有計畫資源，確認設備維護及軟體授權的經費與責任分工，定期檢視工具使用情形。","note":"","new":true,"gamma":[],"cites":[],"key":"AS-1-6"}],"refs":[{"code":"X1-3","text":"學校能增置足夠的學生學習軟硬體設備和行動載具。"},{"code":"X1-5","text":"學校為維護數位學習平臺能列出檢核項目及時程安排。"},{"code":"X1-7","text":"學校訓練學生擔任資訊股長，協助課堂設備與網路使用問題。"},{"code":"X2-3","text":"學校能定期安排全校性數位化經驗分享，促進行政和教學團隊相同理解，建立共識基礎。"},{"code":"X2-5","text":"學校擇選數位學習平臺，並確認維護平臺穩定運作的經費來源。"},{"code":"X3-2","text":"學校行政與教學領導團隊能主動運用資源平臺、數位科技工具增進行政溝通與協調、組織管理，並能提升行政效能。"},{"code":"Y1-2","text":"學校能提供教師增能，協助教師懂得相關數位學習平臺與教學軟體之使用。"},{"code":"Y1-3","text":"學校能持續提供教師數位課程教學與評量相關增能，以利數位學習的轉化。"},{"code":"Y4-1","text":"教師能利用數位學習平臺督導學生學習進度、分派作業、提供評量與回饋。"},{"code":"Y5-1","text":"學生有足夠的數位學習資源，能進行適性與自主學習"},{"code":"Y6-1","text":"學校能提供課程或學習活動，引導學生理解數位公民(註1)應遵守的規範和行為。"},{"code":"Y6-3","text":"學生能發展數位素養，成為負責任的學習者。"},{"code":"Z1-1","text":"學校能提供教師進行數位專業增能，以即時回應個別專業學習需求。"},{"code":"Z1-2","text":"教師能透過學習社群、同儕共學有效增進數位化專業學習。"}]},{"n":2,"items":[{"code":"KR-2-1","dim":"KR","title":"至少組織2個數位社群或現有1個教師社群聚焦於課程中融入數位教學。","note":"","new":false,"gamma":[],"cites":[],"face":"教師面","key":"KR-2-1"},{"code":"KR-2-2","dim":"KR","title":"每一個數位社群應用數位科技到至少2門課程。","note":"(包含共讀教育部中小學數位教學指引3.0版)社群共同檢視課程設計、學生學習證據與教學調整，逐步形成可重用的課程模組。增讀《115年中小學教師數位與AI教學指引》相關章節。","new":false,"gamma":[],"cites":["4-4"],"face":"教師面","key":"KR-2-2"},{"code":"KR-2-3","dim":"KR","title":"校內50%學生的學習應用到數位工具。","note":"","new":false,"gamma":[],"cites":[],"face":"學生面","key":"KR-2-3"},{"code":"KR-2-4","dim":"KR","title":"校內50%行政人員會應用數位工具於行政工作組織溝通與工作減量。","note":"以作業時間、重複填報或錯誤情形等資料檢視行政減量成效。人數與比例請註明母數及計算期間。","new":false,"gamma":[],"cites":[],"face":"行政面","key":"KR-2-4"},{"code":"EC-2-1","dim":"EC","title":"數位學習平臺具備教學與評量功能(LMS)。","note":"","new":false,"gamma":[],"cites":[],"key":"EC-2-1"},{"code":"EC-2-2","dim":"EC","title":"充實數位教材、軟體、網站之課程內容和教材資源。","note":"建置可共享的校本教材、AI提示詞及教學案例，明定內容查核、更新與維護責任。","new":false,"gamma":[],"cites":["4-5，第6點"],"key":"EC-2-2"},{"code":"EC-2-3","dim":"EC","title":"數位學習平臺具問卷調查、投票和測驗等評量與回饋功能。","note":"能彙整任務表現與回饋資料，支援教師調整教學，並依學習需求提供可用的資料匯出方式。","new":false,"gamma":[],"cites":[],"key":"EC-2-3"},{"code":"SL-2-1","dim":"SL","title":"熟練運用線上學習資源，包括數位教材、軟體和影片，增強學習意願。","note":"","new":false,"gamma":[],"cites":[],"key":"SL-2-1"},{"code":"SL-2-2","dim":"SL","title":"具自行排除基礎資訊問題的技術。","note":"","new":false,"gamma":[],"cites":[],"key":"SL-2-2"},{"code":"SL-2-3","dim":"SL","title":"經常運用數位學習平臺（LMS），設定具體且可檢核的學習目標，管理學習進度，建立自學習慣，並採取減少數位分心的自我管理措施。","note":"","new":false,"gamma":[],"cites":[],"key":"SL-2-3"},{"code":"SL-2-4","dim":"SL","title":"透過線上合作與同儕互動，合作學習。","note":"能尊重不同觀點、表達學習困難並進行合作溝通。","new":false,"gamma":[],"cites":["4-6，第6點"],"key":"SL-2-4"},{"code":"SL-2-5","dim":"SL","title":"完成線上作業或測驗，能檢視學習歷程與成果，作為調整自己學習目標與策略的依據。","note":"","new":false,"gamma":[],"cites":[],"key":"SL-2-5"},{"code":"SL-2-6","dim":"SL","title":"使用AI輔助學習時，能保存必要的提示、查證與修訂紀錄，說明採用或不採用AI建議的理由。","note":"","new":true,"gamma":[],"cites":["4-4，頁45、59、68"],"key":"SL-2-6"},{"code":"TT-2-1","dim":"TT","title":"運用數位學習平臺組織教學資源，如課程包、數位教材、線上模擬軟體等，整合不同數位工具，以提升教學品質。","note":"","new":false,"gamma":[],"cites":[],"key":"TT-2-1"},{"code":"TT-2-2","dim":"TT","title":"能使用數位評估工具，如線上測驗、評分系統或共編文件，了解學生學習情形並評估學習成效。","note":"事先說明評分規準與AI使用要求，結合作品歷程、課堂表現或口頭說明確認學生理解。AI內容偵測結果僅作輔助，爭議應結合作品、歷程、學生說明與教師專業判斷。","new":false,"gamma":[],"cites":["4-5，第3點；4-7，第4條"],"key":"TT-2-2"},{"code":"TT-2-3","dim":"TT","title":"運用數位工具如Padlet、生成式AI…進行教學共備。","note":"查核AI生成教材與評量建議，並將可採用的教案與案例納入共享資源。優先使用教育版或經學校審查的環境，不以個人帳號處理學生資料或校務文件。","new":false,"gamma":[],"cites":["4-5，第1、2、5、6點"],"key":"TT-2-3"},{"code":"TT-2-4","dim":"TT","title":"以教學策略促使學生靈活轉換學習模式，如四學模式（註4）。","note":"（自學、導學、共學、互學）整合課前預習、課中互動與課後回饋，保存學生任務及修正歷程。","new":false,"gamma":[],"cites":["4-4，頁68"],"key":"TT-2-4"},{"code":"TT-2-5","dim":"TT","title":"以各種教學型態如線下與線上混成，切換不同的學習環境，以增進學習效果。","note":"","new":false,"gamma":[],"cites":[],"key":"TT-2-5"},{"code":"TT-2-6","dim":"TT","title":"營造彈性和友善的學習氛圍，和安心運用數位的學習環境。","note":"融入情緒覺察、合作溝通及負責任的決定，回應數位學習中的挫折與互動困難。","new":false,"gamma":[],"cites":[],"key":"TT-2-6"},{"code":"TT-2-7","dim":"TT","title":"成為數位公民(註1)的基本素養，營造良好的師生與生生之間的互動關係。","note":"","new":false,"gamma":[],"cites":["4-5，第8點"],"key":"TT-2-7"},{"code":"AS-2-1","dim":"AS","title":"妥善規劃混成教學計畫的實施時間與配套安排。","note":"整合數位學習、AI、SEL及自主學習的課務安排與成果回報，減少重複會議與填報。","new":false,"gamma":[],"cites":[],"key":"AS-2-1"},{"code":"AS-2-2","dim":"AS","title":"評估教師增能需求與規劃短中長期專業發展計畫，讓教師可以具備數位素養與掌握數位教學的能力。","note":"以課程設計、評量與實作共備為進階增能重點，透過觀議課及學生作品檢視轉化成效。","new":false,"gamma":[],"cites":[],"key":"AS-2-2"},{"code":"AS-2-3","dim":"AS","title":"提供教師和學生相關的教育科技培訓課程，以幫助他們熟練使用數位工具與生成式AI。","note":"","new":false,"gamma":[],"cites":["4-4，頁59、67至68"],"key":"AS-2-3"},{"code":"AS-2-4","dim":"AS","title":"成立技術支援小組，以解決教師和學生在科技使用上的問題和疑慮讓師生可以專注於教與學。","note":"明定行政與技術窗口，保存支援流程及交接紀錄。","new":false,"gamma":[],"cites":[],"key":"AS-2-4"},{"code":"AS-2-5","dim":"AS","title":"定期召開核心小組會議，依據數位學習平臺數據與資料檢視教師與學生使用數位工具教與學的問題，並提出改善策略。","note":"依資料安排課堂即時回饋、單元補救或延伸，以及社群或教研會共同檢視，並追蹤改善結果。","new":false,"gamma":[],"cites":[],"key":"AS-2-5"},{"code":"AS-2-6","dim":"AS","title":"建立數位管理與問題回報機制，讓相關技術團隊可以快速地回應並解決技術問題。","note":"","new":false,"gamma":[],"cites":[],"key":"AS-2-6"},{"code":"AS-2-7","dim":"AS","title":"建立明確而清楚的數位學習與生成式AI使用規範。","note":"依課程與評量任務細化可用範圍、揭露方式、查證、個資保護及教師審查責任。班級任務約定須銜接校級規範及必要的家長知情與同意流程。","new":false,"gamma":[],"cites":["4-5，第5至8點"],"key":"AS-2-7"},{"code":"AS-2-8","dim":"AS","title":"維持親師溝通管道","note":"","new":false,"gamma":[],"cites":[],"key":"AS-2-8"},{"code":"AS-2-9","dim":"AS","title":"由核心小組統籌或依需要設置數據治理分工，訂定資料品質、存取權限、保存期限、匯出與家長告知等規則，整合既有資料，避免重複蒐集。","note":"學習評量資料的蒐集、處理與利用，依個人資料保護法及相關法規辦理。","new":true,"gamma":[],"cites":["4-7，第29條"],"key":"AS-2-9"}],"refs":[{"code":"X2-4","text":"學校能向外進行標竿學習，加速達成「數位前導學校目標」。"},{"code":"X2-8","text":"學校能獲取並整合資源，促進行政運作數位化及科技創新。"},{"code":"X3-3","text":"學校善用校務發展數據，進行行政管理、課程教學、學生學習之評估，並以證據為本進行決策。"},{"code":"Y2-3","text":"教師能依據學科特性使用合適的軟體。"},{"code":"Y2-4","text":"發展互動式小組合作學習(例如:運用「四學」（註4）或混成學習(註3)方式，變換不同互動學習模式。"},{"code":"Y5-2","text":"學生進行自主學習時，能利用數位學習平臺紀錄學習過程並能自我檢視。"},{"code":"Z1-3","text":"教師能利用共備，持續地發展與累積數位化教材。"},{"code":"Z1-4","text":"學校能提供鼓勵機制，促進教師間協作與專業回饋。"}]},{"n":3,"items":[{"code":"KR-3-1","dim":"KR","title":"校內至少有50%的教師參與聚焦於數位科技運用的社群。","note":"","new":false,"gamma":[],"cites":[],"face":"教師面","key":"KR-3-1"},{"code":"KR-3-2","dim":"KR","title":"至少5門課程應用到數位科技且沒有集中於相同領域。","note":"跨領域社群比較課程實作與學生學習證據，確認數位融入的教學效益並提出改善措施。","new":false,"gamma":[],"cites":[],"face":"教師面","key":"KR-3-2"},{"code":"KR-3-3","dim":"KR","title":"校內70%學生的學習應用到數位科技。","note":"","new":false,"gamma":[],"cites":[],"face":"學生面","key":"KR-3-3"},{"code":"KR-3-4","dim":"KR","title":"校內80%行政人員會應用數位科技於行政工作組織溝通。","note":"人數與比例請註明母數及計算期間。","new":false,"gamma":[],"cites":[],"face":"行政面","key":"KR-3-4"},{"code":"EC-3-1","dim":"EC","title":"數位學習平臺（LMS）能追蹤學生進度，提供學生個別化建議。","note":"提供教師判讀學習差異所需的資料，個別化建議應結合教師觀察與學生回饋。","new":false,"gamma":[],"cites":[],"key":"EC-3-1"},{"code":"EC-3-2","dim":"EC","title":"數位學習平臺具調整課程內容功能，以滿足不同學生的自適應學習(註2)需求。","note":"","new":false,"gamma":[],"cites":[],"key":"EC-3-2"},{"code":"EC-3-3","dim":"EC","title":"提供線上討論區、即時聊天室等互動工具以促進師生與學生之間的合作和討論。","note":"","new":false,"gamma":[],"cites":[],"key":"EC-3-3"},{"code":"SL-3-1","dim":"SL","title":"能建構自己的學習地圖，並發展自我監控與調整學習的能力。","note":"依可檢核的目標與學習證據調整策略，辨識數位分心或過度依賴AI的情形。","new":false,"gamma":[],"cites":[],"key":"SL-3-1"},{"code":"SL-3-2","dim":"SL","title":"能決定自己的學習目標與任務，並透過使用協作工具，如共編文件、線上白板、視訊會議等，進行自學和共學。","note":"","new":false,"gamma":[],"cites":[],"key":"SL-3-2"},{"code":"SL-3-3","dim":"SL","title":"善用各種形態展現成果，如多媒體等。","note":"","new":false,"gamma":[],"cites":[],"key":"SL-3-3"},{"code":"SL-3-4","dim":"SL","title":"參與線上討論和學習社群，分享資源和經驗。","note":"","new":false,"gamma":[],"cites":[],"key":"SL-3-4"},{"code":"SL-3-5","dim":"SL","title":"利用數位學習平臺並納入生成式AI，根據個人的學習模式和進度選擇合適的教材、進度和練習。","note":"能比較AI建議與自身需求，查核內容後選用，並說明AI協助範圍與自己的判斷。","new":false,"gamma":[],"cites":["4-4，頁59、67至68；4-6，第6點"],"key":"SL-3-5"},{"code":"SL-3-6","dim":"SL","title":"使用線上的學習回饋，檢視學習過程，運用數位工具協助即時評估，根據結果調控自己學習進度。","note":"","new":false,"gamma":[],"cites":[],"key":"SL-3-6"},{"code":"SL-3-7","dim":"SL","title":"認識網路使用的權利、義務與倫理。","note":"","new":false,"gamma":[],"cites":["4-6，第4、6點"],"key":"SL-3-7"},{"code":"SL-3-8","dim":"SL","title":"發展媒體識讀的能力，能分辨事實真偽，能正確地解讀所收到的資訊並對傳播的訊息負起責任。","note":"對AI生成內容的重要主張進行來源比對，辨識錯誤與偏誤並保留修正紀錄。","new":false,"gamma":[],"cites":["4-6，第1至3點"],"key":"SL-3-8"},{"code":"TT-3-1","dim":"TT","title":"針對不同程度的學生，設計異質分組或同質分組教學，運用數位工具提供適性學習任務。","note":"結合起點診斷、任務表現及回饋調整分組與任務，AI建議由教師審查後採用。","new":false,"gamma":[],"cites":["4-4，頁45、68；4-7，第15條"],"key":"TT-3-1"},{"code":"TT-3-2","dim":"TT","title":"能運用線上與線下形成性評量蒐集學生學習情形、提供學生學習回饋，並用以規劃學生之後的學習。","note":"落實課堂即時調整、單元後補救或延伸及教研會校準，檢視介入後的學習表現。","new":false,"gamma":[],"cites":["4-7，第15條"],"key":"TT-3-2"},{"code":"TT-3-3","dim":"TT","title":"運用數位學習平臺（LMS）追蹤學生歷程、進度與成果。","note":"登入、點擊等紀錄僅反映部分參與情形，須與作品、作答或對話交叉判讀。","new":false,"gamma":[],"cites":[],"key":"TT-3-3"},{"code":"TT-3-4","dim":"TT","title":"在課程與教學設計，善用虛實整合的多樣性學習活動，包含多種互動學習方式、同步與非同步模式等，突破空間與時間限制，提供學生更具彈性的學習進度與模式。","note":"依課程目標(視情形)整合SEL、SDGs或在地探究，關注合作互動及學生反思。","new":false,"gamma":[],"cites":[],"key":"TT-3-4"},{"code":"AS-3-1","dim":"AS","title":"促進教師扮演引導者的角色，指引學生主導自己的學習和學習自我監控。","note":"","new":false,"gamma":[],"cites":[],"key":"AS-3-1"},{"code":"AS-3-2","dim":"AS","title":"提供教師和學生具可選擇數位學習資源，由其評估適合資源，以確保符合其學習目標。","note":"","new":false,"gamma":[],"cites":[],"key":"AS-3-2"},{"code":"AS-3-3","dim":"AS","title":"調整與維護數位學習與生成式AI使用規範。","note":"依課堂案例與評量結果滾動修正，並將經查核的教案、提示詞及規範案例納入校本共享庫。","new":false,"gamma":[],"cites":["4-5，第6、8點"],"key":"AS-3-3"},{"code":"AS-3-4","dim":"AS","title":"提供學生解決科技技術問題的指引。","note":"","new":false,"gamma":[],"cites":[],"key":"AS-3-4"},{"code":"AS-3-5","dim":"AS","title":"維持親師溝通管道。","note":"落實學習資料用途告知與問題回應，對外分享採必要範圍及適當去識別方式。刪除姓名不代表資料已完全匿名，仍須評估其他資訊的再辨識風險。","new":false,"gamma":[],"cites":["4-5，第5點；4-7，第29條"],"key":"AS-3-5"},{"code":"AS-3-6","dim":"AS","title":"學校行政及學科教師能發展數位學習成效評估及調整機制。","note":"(鼓勵性)整合學生作品、歷程、回饋及教學調整資料，檢視學習差異與行政效率，追蹤改善效果；維持鼓勵性質。","new":false,"gamma":[],"cites":[],"key":"AS-3-6"},{"code":"AS-3-7","dim":"AS","title":"透過跨校共備與聯合諮輔校準發展定位，安排成熟學校陪伴發展中學校，運用線上共學及必要實體實作，保存教材與工作流程。","note":"","new":true,"gamma":[],"cites":[],"key":"AS-3-7"}],"refs":[{"code":"Y3-1","text":"教師能利用數位化教材進行差異化教學設計，讓學生根據自己能力與程度進行學習。"},{"code":"Y3-2","text":"教師能善用數據回饋作為形成性評量，幫助學生學習調整。"},{"code":"Y4-2","text":"教師能利用差異化和自適應學習(註2)模式增加學生對自我管理學習的責任。"},{"code":"Y5-3","text":"學生能運用數位學習平臺擴大學習選擇機會，滿足學生探索性和適性學習。"},{"code":"Y5-4","text":"學生能善用諮詢輔導資源，增進自我了解和確認學習目標之設定。"},{"code":"Y6-2","text":"學生能透過深度討論、辯論或專題研究，理解數位公民(註1)素養的重要性並願意遵守規範。"}]},{"n":4,"items":[{"code":"KR-4-1","dim":"KR","title":"校內至少有80%的教師參與聚焦於數位科技運用的社群。","note":"","new":false,"gamma":[],"cites":[],"face":"教師面","key":"KR-4-1"},{"code":"KR-4-2","dim":"KR","title":"每個領域至少1門課程應用到數位科技。","note":"各領域持續分享可重用的課程模組及學習成效證據，檢視校本課程的擴散與改進。","new":false,"gamma":[],"cites":[],"face":"教師面","key":"KR-4-2"},{"code":"KR-4-3","dim":"KR","title":"校內85%學生的學習應用到數位科技。","note":"","new":false,"gamma":[],"cites":[],"face":"學生面","key":"KR-4-3"},{"code":"KR-4-4","dim":"KR","title":"校內95%行政人員會應用數位科技於行政工作組織溝通。","note":"人數與比例請註明母數及計算期間。","new":false,"gamma":[],"cites":[],"face":"行政面","key":"KR-4-4"},{"code":"EC-4-1","dim":"EC","title":"依師生教學與學習需求，持續評估、選用及維護教學軟體或應用程式；採購或續訂前檢視使用情形、授權條件及維運總成本，並規劃替代工具與資料移轉。","note":"","new":false,"gamma":[],"cites":["4-4，頁67至68"],"key":"EC-4-1"},{"code":"EC-4-2","dim":"EC","title":"數位學習平臺（LMS）具記錄學生學習足跡的功能，並可提供教師作為教學策略調整參考。","note":"依資料品質與權限規則提供分析及匯出，支援跨年度追蹤並保護學生資料。","new":false,"gamma":[],"cites":["4-7，第29條"],"key":"EC-4-2"},{"code":"EC-4-3","dim":"EC","title":"持續引進教育科技新知，支持學校行政與教學需求。","note":"","new":false,"gamma":[],"cites":[],"key":"EC-4-3"},{"code":"SL-4-1","dim":"SL","title":"能妥善運用線下和線上工具、管理課內和課外學習時間、並清楚自己對課程的期望與承擔學習的責任。","note":"(負責任地完成學習任務)能自主調整數位工具使用與休息節奏，降低分心並維持學習投入。","new":false,"gamma":[],"cites":[],"key":"SL-4-1"},{"code":"SL-4-2","dim":"SL","title":"能有效完成混成學習(註3)計畫中的活動，並尋找適當的資源來進行學習。","note":"","new":false,"gamma":[],"cites":[],"key":"SL-4-2"},{"code":"SL-4-3","dim":"SL","title":"善用生成式AI規劃與輔助自己的學習，反饋學習過程適度調整學習目標、策略、節奏和資源。","note":"能評估AI建議的適切性與限制，查證、修訂並揭露使用情形，保持自主判斷與學習責任。","new":false,"gamma":[],"cites":["4-4，頁59、68；4-6，第6點"],"key":"SL-4-3"},{"code":"SL-4-4","dim":"SL","title":"能運用數位科技自主學習、探究問題、分享學習、延伸學習。","note":"","new":false,"gamma":[],"cites":[],"key":"SL-4-4"},{"code":"SL-4-5","dim":"SL","title":"認識網路使用的權利、義務與倫理。","note":"","new":false,"gamma":[],"cites":[],"key":"SL-4-5"},{"code":"TT-4-1","dim":"TT","title":"能透過專業增能與社群共備，研擬提供學生完善的自主學習規劃與執行歷程。","note":"","new":false,"gamma":[],"cites":[],"key":"TT-4-1"},{"code":"TT-4-2","dim":"TT","title":"能善用教室情境、數位軟體、分組安排、與載具使用，將混成學習(註3)的效果最佳化。","note":"","new":false,"gamma":[],"cites":[],"key":"TT-4-2"},{"code":"TT-4-3","dim":"TT","title":"提供線下和線上多種學習選項與模式來完成學習任務。","note":"","new":false,"gamma":[],"cites":[],"key":"TT-4-3"},{"code":"TT-4-4","dim":"TT","title":"能持續與社群教師、家長和學生合作，為學生創造更多元的個人化學習體驗，提升混成學習(註3)和數位運用之學習綜效。","note":"整合SEL與學生多元需求，將具成效的設計整理為可共享的課程模組。","new":false,"gamma":[],"cites":[],"key":"TT-4-4"},{"code":"TT-4-5","dim":"TT","title":"能運用自適應學習(註2)(Personalized Adaptive Learning)平臺、學生學習的數據分析、生成式AI，持續精進教學策略。","note":"結合教師專業判斷檢視分析與AI建議，追蹤教學調整後的學習表現，於社群中校準與分享。","new":false,"gamma":[],"cites":["4-4，頁45、67至68"],"key":"TT-4-5"},{"code":"TT-4-6","dim":"TT","title":"能運用學生自適應學習(註2)(Personalized Adaptive Learning)平臺和數位軟體及數位工具，協助學生規劃、參與、和評估自己的學習。","note":"","new":false,"gamma":[],"cites":[],"key":"TT-4-6"},{"code":"AS-4-1","dim":"AS","title":"提供教師必要的數位工具，協助教師數據分析之專業增能，以評估學生的學習表現並調整教學策略。","note":"支持教師判讀資料品質與學習差異，促進以證據為本的課程改進。","new":false,"gamma":[],"cites":[],"key":"AS-4-1"},{"code":"AS-4-2","dim":"AS","title":"鼓勵教師參與教育科技研究和創新計畫，以發展新的教學方法和科技應用。","note":"","new":false,"gamma":[],"cites":[],"key":"AS-4-2"},{"code":"AS-4-3","dim":"AS","title":"維持親師溝通管道","note":"","new":false,"gamma":[],"cites":[],"key":"AS-4-3"},{"code":"AS-4-4","dim":"AS","title":"學校行政及學科教師能發展數位學習成效評估及調整機制。","note":"(鼓勵性)定期檢視跨年度學生學習、課程轉化及行政減量成效，依結果調整資源與發展目標；維持鼓勵性質。","new":false,"gamma":[],"cites":[],"key":"AS-4-4"},{"code":"AS-4-5","dim":"AS","title":"建立跨年度設備更新、授權維運與人力交接機制，透過區域共享、示範及陪伴支持其他學校，維持推動成果的持續性。","note":"","new":true,"gamma":[],"cites":[],"key":"AS-4-5"}],"refs":[{"code":"X2-7","text":"學校能長期關注數位發展趨勢於必要時更新數位環境與軟硬體設備。"},{"code":"X3-1","text":"學校能運用數位科技掌握教育發展趨勢，據以擬定與調整學校發展目標。"},{"code":"Z2-2","text":"教師能進行跨界、跨國共備與共授，提供學生課程選修的機會。"}]}],"a2":[{"n":0,"items":[{"code":"KR-0-1","dim":"KR","title":"決定成為開課學校或合作學校。","note":"並於跨校課程匯流平臺登錄課程或合作需求，確認兩校行政與教學窗口，說明各方課程實施及學生支持責任。","new":false,"gamma":[],"cites":["4-8，第4、5點"],"key":"KR-0-1"},{"code":"KR-0-2","dim":"KR","title":"溝通與確認開設課程內容及時段。","note":"協調行事曆、課程目標、學生起點及共備時段，並規劃非即時節數之學習安排（即時互動比例詳AS-0-5）；跨國合作另評估時差、語言與協調量能。","new":false,"gamma":[],"cites":[],"key":"KR-0-2"},{"code":"KR-0-3","dim":"KR","title":"確認參與學校之課程計畫是否各自取得課程代碼。","note":"依課程性質確認課程計畫、備查及跨校協議等適用程序。","new":false,"gamma":[],"cites":["4-7，第19條"],"key":"KR-0-3"},{"code":"KR-0-4","dim":"KR","title":"確認選課機制（含加退選）及其時間。","note":"共同訂定選課、加退選及名單異動的辦理時程與聯繫流程。","new":false,"gamma":[],"cites":[],"key":"KR-0-4"},{"code":"KR-0-5","dim":"KR","title":"確認線上課程管理數位學習平臺及其運作。","note":"兩端完成帳號權限、教材分享、連線與基本互動測試，確認支援及備援安排。","new":false,"gamma":[],"cites":[],"key":"KR-0-5"},{"code":"KR-0-6","dim":"KR","title":"完成雙師分工協議（開課學校任課教師／合作學校合作教師），明訂點名、成績對接、斷訊處理、學習評量協助、學習成果認證及學生狀況通報之權責。","note":"","new":true,"gamma":[],"cites":["4-8，第4、5、9點"],"key":"KR-0-6"},{"code":"KR-0-7","dim":"KR","title":"設計跨校修課學生之數據使用告知及AI使用規範說明，含家長知情同意。","note":"","new":true,"gamma":["γ-1、γ-2"],"cites":["4-5，第5至8點"],"key":"KR-0-7"},{"code":"KR-0-8","dim":"KR","title":"盤點課程將蒐集之學習數據（出席、作業繳交、平臺互動），約定兩校存取權限，僅交換教學支持所需之學生資料。","note":"","new":true,"gamma":["γ-2"],"cites":["4-7，第29條"],"key":"KR-0-8"},{"code":"EC-0-1","dim":"EC","title":"確認網路速度與軟硬體設備。","note":"開課前以實際上課情境完成至少1次兩端連線測試（網路負載、聲音、畫面與回應），留下問題及改善紀錄。","new":false,"gamma":[],"cites":[],"key":"EC-0-1"},{"code":"EC-0-2","dim":"EC","title":"確認上課使用之線上會議室軟體。","note":"確認工具授權、帳號、適齡及資料使用條件，優先評估既有平臺。","new":false,"gamma":[],"cites":["4-4，頁67至68；4-5，第5、7點"],"key":"EC-0-2"},{"code":"EC-0-3","dim":"EC","title":"設定老師與學生麥克風、獨立鏡頭、耳機、電腦及螢幕的連結與擺放位置。","note":"共同檢查回音、遠端發言及教材可讀性，形成可重用的設備配置與課前檢核表。","new":false,"gamma":[],"cites":[],"key":"EC-0-3"},{"code":"EC-0-4","dim":"EC","title":"兩端各規劃固定之遠距學習空間（專用遠距教室或固定教室），減少每次課前架設與調校。","note":"","new":true,"gamma":[],"cites":[],"key":"EC-0-4"},{"code":"EC-0-5","dim":"EC","title":"建立斷訊備援方案（備援網路、行動熱點或非同步替代任務），與TT-0-5、AS-0-1之聯繫流程一致。","note":"","new":true,"gamma":[],"cites":[],"key":"EC-0-5"},{"code":"SL-0-1","dim":"SL","title":"學生了解課程的選課機制與加退選機制。","note":"並了解課程評量、學分及求助窗口，能提出設備或學習支持需求。","new":false,"gamma":[],"cites":[],"key":"SL-0-1"},{"code":"SL-0-2","dim":"SL","title":"學生熟悉上課使用之軟硬體。","note":"完成上線演練，知道帳密保護、設備借用及故障回報方式。","new":false,"gamma":[],"cites":[],"key":"SL-0-2"},{"code":"SL-0-3","dim":"SL","title":"學生可以準時上線，參與課程。","note":"斷線時依約定回報，取得替代任務或補學安排。","new":false,"gamma":[],"cites":[],"key":"SL-0-3"},{"code":"SL-0-4","dim":"SL","title":"學生了解遠距上課約定、跨校課堂的影像、作品及資料分享約定與個人資料使用範圍；使用AI時遵守適齡、查證、個資與成果揭露規範。","note":"","new":true,"gamma":["γ-1、γ-2"],"cites":["4-6，第1、2、4至6點"],"key":"SL-0-4"},{"code":"TT-0-1","dim":"TT","title":"能使用線上視訊軟體，實施遠距教學。","note":"確認兩端學生均能收看、收聽及互動，安排可取得的學習與技術支持。","new":false,"gamma":[],"cites":[],"key":"TT-0-1"},{"code":"TT-0-2","dim":"TT","title":"能規劃適合遠距教學的教材形式與指派學習表現任務的方式。","note":"先明確界定學習目標及理解檢核，再決定AI不用、限制步驟或可協作的範圍，並準備替代安排。","new":false,"gamma":["γ-1"],"cites":["4-4，頁59、67至68"],"key":"TT-0-2"},{"code":"TT-0-3","dim":"TT","title":"能掌握學生的名單和出席。","note":"與合作端確認出席及名單異動流程，僅交換教學支持所需的學生資訊。","new":false,"gamma":[],"cites":["4-7，第29條"],"key":"TT-0-3"},{"code":"TT-0-4","dim":"TT","title":"能運用數位學習平臺(Google Classroom或酷課雲等)經營課室與課程。","note":"清楚提供教材、任務、回饋及聯繫方式，設定適當分享與存取權限。","new":false,"gamma":[],"cites":[],"key":"TT-0-4"},{"code":"TT-0-5","dim":"TT","title":"能訂立臨時斷訊時的危機處理模式。","note":"與兩端窗口共同訂定斷訊、設備故障及現場緊急事件的聯繫、替代教學與補學流程。","new":false,"gamma":[],"cites":[],"key":"TT-0-5"},{"code":"TT-0-6","dim":"TT","title":"與合作學校教師確認課程目標、評量方式及評分規準，並約定共備時程。","note":"","new":true,"gamma":[],"cites":["4-8，第8點"],"key":"TT-0-6"},{"code":"TT-0-7","dim":"TT","title":"完成AI基礎研習，能嘗試以AI輔助備課與課室經營，並由教師查核產出內容。","note":"","new":true,"gamma":["γ-1"],"cites":["4-5，第1至3點"],"key":"TT-0-7"},{"code":"AS-0-1","dim":"AS","title":"學校能建置網路環境，提供師生進行遠距學習。","note":"確認各端問題回報窗口、排除方式與無法連線時的替代教學安排。","new":false,"gamma":[],"cites":[],"key":"AS-0-1"},{"code":"AS-0-2","dim":"AS","title":"學校能提供基本硬體設備與載具，提供師生進行遠距學習。","note":"盤點載具、場地及特殊需求，對設備或帳號受限者提供可達成相同目標的支持。","new":false,"gamma":[],"cites":[],"key":"AS-0-2"},{"code":"AS-0-3","dim":"AS","title":"數位軟體的採購與提供。","note":"確認費用、授權、帳號、維運及退出時的資料處理方式，避免重複採購。","new":false,"gamma":[],"cites":[],"key":"AS-0-3"},{"code":"AS-0-4","dim":"AS","title":"學校能營造鼓勵遠距教學的氛圍。","note":"以學生學習需求與課程互補說明合作目的，協調教師共備與必要支持。","new":false,"gamma":[],"cites":[],"key":"AS-0-4"},{"code":"AS-0-5","dim":"AS","title":"確認課程計畫與課程代碼。","note":"依課程適用規定完成課程計畫及備查；適用跨校遠距要點第3點者，確認二分之一以上節數採即時互動，其餘節數得採實體授課、測驗、報告、實作、主題探究或指定閱讀等方式，不套用所有校內混成活動。","new":false,"gamma":[],"cites":["4-7，第19條；4-8，第3點"],"key":"AS-0-5"},{"code":"AS-0-6","dim":"AS","title":"確認選課機制、加退選機制、線上課程數位學習平臺管理及其運作。","note":"整合選課、名單、平臺權限、出席與成績對接，明定兩校窗口及辦理時程。","new":false,"gamma":[],"cites":[],"key":"AS-0-6"},{"code":"AS-0-7","dim":"AS","title":"跨校行政的聯繫與溝通。","note":"雙方各設單一行政窗口，建立共備機制，協議課程實施、評量、學分與成果認證分工。合作教師依需要及適用規定排定，不另作所有科目一律必置之要求","new":false,"gamma":[],"cites":["4-7，第19條；4-8，第4至6、8、9點"],"key":"AS-0-7"},{"code":"AS-0-8","dim":"AS","title":"兩校共同形成課務、設備檢核、成績對接、成果認證及異常處理流程，明定窗口、時程及必要紀錄，供後續辦理及交接。","note":"","new":true,"gamma":[],"cites":[],"key":"AS-0-8"},{"code":"AS-0-9","dim":"AS","title":"預先規劃經費來源：競爭型計畫支應鐘點費、AI或數位工具帳號集中採購及月繳方案之核銷方式；工具導入前確認適齡、隱私與授權條款。","note":"","new":true,"gamma":["γ-1"],"cites":["4-5，第5至8點"],"key":"AS-0-9"},{"code":"AS-0-10","dim":"AS","title":"透過跨校課程匯流平臺完成課程登錄與媒合，減少跨校聯繫往返，達到行政減量。","note":"","new":true,"gamma":[],"cites":[],"key":"AS-0-10"}],"refs":[{"code":"X1-1","text":"學校在數位環境增置足夠軟硬體設備(例如：網路……等)。"},{"code":"X1-2","text":"學校能增置足夠的教師教學軟硬體設備。"},{"code":"X1-3","text":"學校能增置足夠的學生學習軟硬體設備和行動載具。"},{"code":"X1-4","text":"學校為維護數位環境能列出檢核項目及時程安排。"},{"code":"X1-6","text":"學校設置專業人員解決複雜的網路與設備問題。"},{"code":"X2-1","text":"學校成立數位核心小組(成員包括校長、主任、學科領域召集人)。"},{"code":"X2-2","text":"學校數位核心小組能負責數位環境之規劃、全校性數位整體推動工作"},{"code":"X2-6","text":"學校能持續定期檢視並調整推動數位化之工作。"},{"code":"Y1-1","text":"學校能提供教師增能，解決一般教室網路與設備問題。"}]},{"n":1,"items":[{"code":"KR-1-1","dim":"KR","title":"成為開課學校或合作學校，開設或參與一門課程。","note":"依開課或合作角色完成約定工作，確認兩端學生均有參與及取得回饋的機會。","new":false,"gamma":[],"cites":[],"key":"KR-1-1"},{"code":"KR-1-2","dim":"KR","title":"教學環境能滿足師生遠距教與學的需求。","note":"透過兩端測試、問題回報及改善紀錄檢視障礙是否排除。","new":false,"gamma":[],"cites":[],"key":"KR-1-2"},{"code":"KR-1-3","dim":"KR","title":"課程內容順暢雙向(多向)傳遞。","note":"除連線順暢外，並以學生回應、提問與任務參與檢視互動品質。","new":false,"gamma":[],"cites":[],"key":"KR-1-3"},{"code":"KR-1-4","dim":"KR","title":"建立學生有效學習的確認系統。","note":"結合作品、課堂說明、實作及回饋確認個別理解，不只以登入或出席認定學習成效。","new":false,"gamma":[],"cites":["4-7，第2、4條"],"key":"KR-1-4"},{"code":"KR-1-5","dim":"KR","title":"建立課程基本學習數據紀錄（出席、作業繳交、平臺參與），每學期至少與合作學校共同檢視1次，作為調整教學之依據。","note":"","new":true,"gamma":["γ-2"],"cites":[],"key":"KR-1-5"},{"code":"KR-1-6","dim":"KR","title":"跨校修課學生（含加退選後新加入者）均完成數據使用告知與AI使用規範說明，並留存紀錄。","note":"","new":true,"gamma":["γ-1、γ-2"],"cites":[],"key":"KR-1-6"},{"code":"KR-1-7","dim":"KR","title":"運用AI提升備課能力與設計遠距課程教材，標註來源與引用，並查核內容正確性。","note":"","new":true,"gamma":["γ-1→α-2"],"cites":["4-5，第1至3點"],"key":"KR-1-7"},{"code":"EC-1-1","dim":"EC","title":"會運用設備提升遠距教學的聲音與影像品質(例如：指向式麥克風)。","note":"依兩端師生回饋改善音像品質，追蹤問題處理情形。","new":false,"gamma":[],"cites":[],"key":"EC-1-1"},{"code":"EC-1-2","dim":"EC","title":"會運用線上會議室與數位學習平臺，進行遠距教學活動。","note":"串連教材、任務及回饋，減少重複登入與繳交負擔。","new":false,"gamma":[],"cites":[],"key":"EC-1-2"},{"code":"EC-1-3","dim":"EC","title":"設定麥克風、獨立鏡頭、電腦及螢幕的連結與擺放使用的最佳模組。","note":"保存課前快速檢核與故障替代方式，供後續課程沿用。","new":false,"gamma":[],"cites":[],"key":"EC-1-3"},{"code":"SL-1-1","dim":"SL","title":"能自行檢視載具、網路品質，並熟悉線上互動軟體的使用。","note":"超出能力時能及時向約定窗口求助。","new":false,"gamma":[],"cites":[],"key":"SL-1-1"},{"code":"SL-1-2","dim":"SL","title":"能遵守線上上課的約定。","note":"約定涵蓋發言、出席、錄影及資料分享；使用AI時依任務要求揭露用途、查證並尊重隱私。","new":false,"gamma":[],"cites":["4-6，第1、2、4至6點"],"key":"SL-1-2"},{"code":"SL-1-3","dim":"SL","title":"能積極參與課程，並與授課教師、同學互動。","note":"能提出學習困難並回應不同觀點，維持尊重及合作溝通。","new":false,"gamma":[],"cites":[],"key":"SL-1-3"},{"code":"SL-1-4","dim":"SL","title":"能完成教師指派作業或學習表現任務。","note":"能說明推理、操作或修正過程，以及自己對成果的貢獻。","new":false,"gamma":[],"cites":[],"key":"SL-1-4"},{"code":"SL-1-5","dim":"SL","title":"能積極參與教師設計的教學活動，善用數位學習平臺完成教師安排的學習任務與評量任務。","note":"依回饋修正成果，使用AI時說明協助範圍及自己的判斷。","new":false,"gamma":[],"cites":["4-6，第6點"],"key":"SL-1-5"},{"code":"SL-1-6","dim":"SL","title":"能與跨校遠距同學進行小組的互動與溝通。","note":"協商角色與分工，共同解決問題並相互提供具體回饋。","new":false,"gamma":[],"cites":[],"key":"SL-1-6"},{"code":"SL-1-7","dim":"SL","title":"能依AI使用守則，運用AI素養，自主掌握遠距課程進度。","note":"","new":true,"gamma":["γ-1→α-2"],"cites":["4-6，第6點"],"key":"SL-1-7"},{"code":"TT-1-1","dim":"TT","title":"能根據遠距課程性質設定班級經營規定，與遠距學生約定上課規定，增加與學生互動的頻率。","note":"安排兩端皆可發言、提問及求助的方式，適度調整講述、互動與休息節奏，回應遠距疲勞。","new":false,"gamma":[],"cites":[],"key":"TT-1-1"},{"code":"TT-1-2","dim":"TT","title":"能根據課程需求備妥上課所需之教材與作業。","note":"備妥可讀取的教材與低頻寬或離線版本，確保設備受限者仍可學習。","new":false,"gamma":[],"cites":[],"key":"TT-1-2"},{"code":"TT-1-3","dim":"TT","title":"能設計符合跨校遠距共授之評量方式並事先告知學生。","note":"跨校教師共同確認規準、AI使用邊界、揭露與成績對接，依適用程序告知學生。AI偵測結果僅為輔助，爭議須綜合作品、歷程、學生說明與教師判斷。","new":false,"gamma":[],"cites":["4-4，頁59；4-5，第3、6點；4-7，第19條"],"key":"TT-1-3"},{"code":"TT-1-4","dim":"TT","title":"能進行跨校共備與共授，評估與了解學生的學習起點與需求。","note":"共同了解學生起點，安排預備教材、差異化任務及兩端觀察與支援分工。","new":false,"gamma":[],"cites":["4-8，第8點"],"key":"TT-1-4"},{"code":"TT-1-5","dim":"TT","title":"能彈性運用不同形式的教學內容、策略及活動，以促進遠距學生學習，並確認兩端學生有實際參與機會。","note":"","new":false,"gamma":[],"cites":[],"key":"TT-1-5"},{"code":"TT-1-6","dim":"TT","title":"教學過程關注遠距學生學習情況，並能透過線下群組推動即時支援。","note":"合作端依協議提供現場與技術支持，僅在必要範圍交換學習資訊。","new":false,"gamma":[],"cites":["4-8，第5點；4-7，第29條"],"key":"TT-1-6"},{"code":"TT-1-7","dim":"TT","title":"能給予適性評量，診斷學生學習成效。","note":"依個別表現安排補救、延伸或適切回饋，再檢視修正後的理解。","new":false,"gamma":[],"cites":["4-7，第4、15條"],"key":"TT-1-7"},{"code":"TT-1-8","dim":"TT","title":"能執行臨時斷訊時的危機處理。","note":"記錄受影響的互動與學習，安排補足；涉及出缺席或同步節數時，兩校依適用規定確認。","new":false,"gamma":[],"cites":[],"key":"TT-1-8"},{"code":"TT-1-9","dim":"TT","title":"運用AI備課能力生成例題、改寫文本、學習單及課後摘要，提升遠距教材品質。","note":"","new":true,"gamma":["γ-1→α-2"],"cites":[],"key":"TT-1-9"},{"code":"TT-1-10","dim":"TT","title":"運用數位學習平臺紀錄提供形成性回饋，供學生修改與進步。","note":"","new":true,"gamma":["γ-1"],"cites":[],"key":"TT-1-10"},{"code":"AS-1-1","dim":"AS","title":"學校能提供合適的收、放音與傳輸影像設備，讓師生有更佳的聲音與影像品質。","note":"建立報修、備援與追蹤方式，確保兩端學生均可參與。","new":false,"gamma":[],"cites":[],"key":"AS-1-1"},{"code":"AS-1-2","dim":"AS","title":"學校能協助教師增能以設計適合遠距的教學模式與互動模式。","note":"依學科與熟悉程度安排短時示範、實作共備及同儕陪伴，檢視是否轉為課程改進。","new":false,"gamma":[],"cites":[],"key":"AS-1-2"},{"code":"AS-1-3","dim":"AS","title":"數位軟體的採購與提供。","note":"定期檢視授權使用、維運成本與支援量能，必要時規劃替代工具或資料移轉。","new":false,"gamma":[],"cites":[],"key":"AS-1-3"},{"code":"AS-1-4","dim":"AS","title":"學校能組成教師社群，研討增進遠距教學的效果。","note":"以學生參與、理解與回饋檢視課程，整併重複會議及成果紀錄。","new":false,"gamma":[],"cites":["4-8，第8點"],"key":"AS-1-4"},{"code":"AS-1-5","dim":"AS","title":"維持學生、家長及兩校教師可使用的溝通與支援管道；AI使用先確認工具條件、校級規範及必要的家長知情與同意機制。","note":"","new":true,"gamma":[],"cites":["4-5，第5至8點"],"key":"AS-1-5"},{"code":"AS-1-6","dim":"AS","title":"兩端各培訓至少1名資訊股長，協助課堂設備與網路問題。","note":"","new":true,"gamma":[],"cites":[],"key":"AS-1-6"},{"code":"AS-1-7","dim":"AS","title":"將遠距課程納入校內資安事件通報與應變流程（含帳號外洩、錄影檔外流）。","note":"","new":true,"gamma":["γ-2"],"cites":[],"key":"AS-1-7"}],"refs":[{"code":"X1-7","text":"學校訓練學生擔任資訊股長，協助課堂設備與網路使用問題。"},{"code":"X2-3","text":"學校能定期安排全校性數位化經驗分享，促進行政和教學團隊相同理解，建立共識基礎。"},{"code":"Z1-1","text":"學校能提供教師進行數位專業增能，以即時回應個別專業學習需求。"},{"code":"Z1-2","text":"教師能透過學習社群、同儕共學有效增進數位化專業學習。"},{"code":"Y2-1","text":"教師能發展出數位課程模組。"},{"code":"Y2-2","text":"教師能應用數位融入課程設計與教學活動。"},{"code":"Z2-1","text":"教師能進行跨校共備與共授，提供學生課程選修的機會。"},{"code":"Y4-1","text":"教師能利用數位學習平臺督導學生學習進度、分派作業、提供評量與回饋。"},{"code":"Y6-1","text":"學校能提供課程或學習活動，引導學生理解數位公民（註1）應遵守的規範和行為。"}]},{"n":2,"items":[{"code":"KR-2-1","dim":"KR","title":"至少開設一門遠距課程提供合作學校選課。","note":"","new":false,"gamma":[],"cites":[],"key":"KR-2-1"},{"code":"KR-2-2","dim":"KR","title":"利用遠距教學增加教與學的互動效果與品質。","note":"透過跨校共同探究、個別說明與合作成果檢視學習品質。","new":false,"gamma":[],"cites":[],"key":"KR-2-2"},{"code":"KR-2-3","dim":"KR","title":"運用數位學習平臺增強教與學的互動和即時回饋。","note":"追蹤學生是否依回饋修正，而非僅統計互動或點擊次數。","new":false,"gamma":[],"cites":[],"key":"KR-2-3"},{"code":"KR-2-4","dim":"KR","title":"進行公開觀課，推廣跨校遠距共授經驗。","note":"分享適用條件、學生學習證據、限制與修正經驗，事先處理錄影及作品的使用範圍。","new":false,"gamma":[],"cites":[],"key":"KR-2-4"},{"code":"KR-2-5","dim":"KR","title":"依學生學習成效修正課程內容與教學方式。","note":"共同檢視兩端差異、參與障礙與支援負擔，追蹤調整後的效果。","new":false,"gamma":[],"cites":[],"key":"KR-2-5"},{"code":"KR-2-6","dim":"KR","title":"建置遠距課程學習數據看板，兩校教師共同用於教學對話。","note":"","new":true,"gamma":["γ-2"],"cites":[],"key":"KR-2-6"},{"code":"KR-2-7","dim":"KR","title":"區域引導（中心帶動周邊，Hub and Spoke）：每所前導學校至少引領1所高優學校加入跨校遠距共授（擔任合作學校或共同開課）。","note":"","new":false,"gamma":[],"cites":[],"key":"KR-2-7"},{"code":"KR-2-7","dim":"KR","title":"互助會作為孵化器：以輔導、共同備課、公開觀議課及工作坊，使高優學校具備數位教學能力並持續自主成長。","note":"","new":false,"gamma":[],"cites":[],"key":"KR-2-7#2","dup":true},{"code":"EC-2-1","dim":"EC","title":"利用各類數位軟體與數位學習平臺，進行多元教學活動（例如分組教學、差異化教學），強化師生與線上線下學生間互動。","note":"依學習目標選擇適量工具，定期檢視兩端操作與切換負擔。","new":false,"gamma":[],"cites":[],"key":"EC-2-1"},{"code":"EC-2-2","dim":"EC","title":"異地學生分組合作完成學習任務，並完成組內共學、解決問題。","note":"環境與工具支援跨校共編及討論，保留必要的分工、回饋與共同成果。","new":false,"gamma":[],"cites":[],"key":"EC-2-2"},{"code":"EC-2-3","dim":"EC","title":"整合異地學生的學習情境，提供達成共同學習目標的等值參與、教材與回饋機會，並依設備、能力或支持需求提供適切安排。","note":"","new":false,"gamma":[],"cites":[],"key":"EC-2-3"},{"code":"EC-2-4","dim":"EC","title":"導入虛實整合互動工具（出席追蹤、遠端學生參與狀態視覺化、AI跨校分組助教），使實體與遠端學生享有同等參與感；涉及學生影像或行為資料者，不蒐集非教學必要之生物特徵資料（如臉部辨識）。","note":"","new":true,"gamma":["γ-1→α-2"],"cites":["4-7，第29條"],"key":"EC-2-4"},{"code":"SL-2-1","dim":"SL","title":"運用數位學習平臺參與實體與跨校的學習互動，接受即時回饋並調整學習策略延伸課堂的學習。","note":"能說明策略調整的依據，並將所學運用於後續任務。","new":false,"gamma":[],"cites":[],"key":"SL-2-1"},{"code":"SL-2-2","dim":"SL","title":"能建立跨校共學夥伴關係。","note":"持續協商分工、相互支持並履行共同責任。","new":false,"gamma":[],"cites":[],"key":"SL-2-2"},{"code":"SL-2-3","dim":"SL","title":"能提出線上遠距學習心得與反思。","note":"具體說明收穫、困難及改進；使用AI時反思其協助、限制與自己的判斷。","new":false,"gamma":[],"cites":["4-6，第6點"],"key":"SL-2-3"},{"code":"SL-2-4","dim":"SL","title":"運用AI素養在遠距課程中自主設定學習目標、檢查進度並反思學習成果，強化自律學習（SRL）能力。","note":"","new":true,"gamma":["γ-1→α-2"],"cites":[],"key":"SL-2-4"},{"code":"TT-2-1","dim":"TT","title":"能善用數位軟體與工具，協助學生進行各種討論與互動學習。","note":"關注不同起點學生的參與品質，避免以發言次數取代理解。","new":false,"gamma":[],"cites":[],"key":"TT-2-1"},{"code":"TT-2-2","dim":"TT","title":"能熟練運用數位學習平臺進行教學，擴大學生互動並提升學習成效；結合作品、作答與對話判讀理解，不僅以互動頻次評估成效。","note":"","new":false,"gamma":[],"cites":[],"key":"TT-2-2"},{"code":"TT-2-3","dim":"TT","title":"能組織跨校學生學習小組，合作完成學習任務與作業。","note":"結合角色分工、現場說明及作品修正，確認每位學生的貢獻與理解。","new":false,"gamma":[],"cites":[],"key":"TT-2-3"},{"code":"TT-2-4","dim":"TT","title":"能透過回饋或佐證資料，滾動調整教學設計與過程，彙整遠距教學實施模式與成果。","note":"與合作端共同檢視資料限制，整理含教案、設備、課務、評量及常見問題的可重用模組。","new":false,"gamma":[],"cites":[],"key":"TT-2-4"},{"code":"TT-2-5","dim":"TT","title":"能善用數位影音教材與資料，讓線上和線下學生有效投入學習。","note":"確認教材授權、兩端可讀取及使用範圍，依學生反應調整活動。","new":false,"gamma":[],"cites":[],"key":"TT-2-5"},{"code":"TT-2-6","dim":"TT","title":"能熟練而有效地兼顧線上和線下學生的學習狀況。","note":"與合作端比較兩端學習需求，安排補學、挑戰或個別支持並追蹤進展。","new":false,"gamma":[],"cites":["4-7，第15條"],"key":"TT-2-6"},{"code":"TT-2-7","dim":"TT","title":"運用AI進行即時提問與形成性評量回饋，並將AI融入跨校小組活動。","note":"","new":true,"gamma":["γ-1"],"cites":["4-4，頁45"],"key":"TT-2-7"},{"code":"TT-2-8","dim":"TT","title":"將γ-1建立之差異化評量工具（評量規準Rubrics、自動評量尺規）應用於跨校適性評量，使兩校評分標準一致，並整理學生常見迷思。","note":"","new":true,"gamma":["γ-1→α-2"],"cites":[],"key":"TT-2-8"},{"code":"TT-2-9","dim":"TT","title":"同一單元發展差異化教材與個人化複習包（補救／標準／挑戰），建立兩校共用模板。","note":"","new":true,"gamma":["γ-1→α-2"],"cites":[],"key":"TT-2-9"},{"code":"AS-2-1","dim":"AS","title":"學校能協助教師選擇並熟練使用適合的數位學習平臺。","note":"評估工具的權限、資料移轉、維運成本與退出安排，保留適切替代方案。","new":false,"gamma":[],"cites":["4-4，頁67至68"],"key":"AS-2-1"},{"code":"AS-2-2","dim":"AS","title":"學校能協助教師增能以運用適合的軟體於教學上。","note":"依角色與課程問題安排增能及陪伴，以實作與教學調整檢視成果。","new":false,"gamma":[],"cites":[],"key":"AS-2-2"},{"code":"AS-2-3","dim":"AS","title":"學校能鼓勵教師進行遠距教學的公開觀課，以及分享數位教學策略與實施成效。","note":"確認個資、錄影、影像與作品分享的範圍及必要告知或同意；對外資料避免辨識學生。","new":false,"gamma":[],"cites":["4-7，第29條"],"key":"AS-2-3"},{"code":"AS-2-4","dim":"AS","title":"學校能鼓勵教師與合作學校成立課程共備社群，提升遠距課程品質。","note":"保存共備、課務及支援流程，明定維護與交接責任；依學習需求及量能決定續辦、精進或擴展。","new":false,"gamma":[],"cites":["4-8，第8點"],"key":"AS-2-4"},{"code":"AS-2-5","dim":"AS","title":"透過區域互助及公開觀議課分享可重用模組，依學生需求逐步擴展學科與合作學校，並支持尚未推動的學校。","note":"","new":true,"gamma":[],"cites":[],"key":"AS-2-5"},{"code":"AS-2-6","dim":"AS","title":"建置兩校共享教材庫（雲端硬碟或LMS），透過跨校共備社群擴大分享範圍。","note":"","new":true,"gamma":["α-2→γ-1"],"cites":[],"key":"AS-2-6"},{"code":"AS-2-7","dim":"AS","title":"建立數據存取稽核流程，跨校分析之數據先行去識別化。","note":"","new":true,"gamma":["γ-2"],"cites":["4-7，第29條"],"key":"AS-2-7"}],"refs":[{"code":"X1-5","text":"學校為維護數位學習平臺能列出檢核項目及時程安排。"},{"code":"X2-7","text":"學校建置全校性學習管理平臺(LMS)，並確認維護數位學習平臺穩定運作的經費來源。"},{"code":"X3-2","text":"學校行政與教學領導團隊能主動運用資源平臺、數位工具與軟體增進行政溝通與協調、組織管理，並能提升行政效能。"},{"code":"X2-4","text":"學校能向外進行標竿學習，加速達成「數位前導學校目標」。"},{"code":"X2-7","text":"學校能長期關注數位發展趨勢於必要時更新數位環境與軟硬體設備。"},{"code":"X2-8","text":"學校能獲取並整合資源，促進行政運作數位化及科技創新。"},{"code":"X3-1","text":"學校能運用數位科技掌握教育發展趨勢，據以擬定與調整學校發展目標。"},{"code":"X3-3","text":"學校善用校務發展數據，進行行政管理、課程教學、學生學習之評估，並以證據為本進行決策。"},{"code":"Y1-2","text":"學校能提供教師增能，協助教師懂得相關數位學習平臺與教學軟體之使用。"},{"code":"Y1-3","text":"學校能持續提供教師數位課程教學與評量相關增能，以利數位學習的轉化。"},{"code":"Y2-3","text":"教師能依據學科特性使用合適的軟體。"},{"code":"Y2-4","text":"發展互動式小組合作學習(例如:運用「四學」（註4）或混成學習(註3)方式，變換不同互動學習模式。"},{"code":"Y3-2","text":"教師能善用數據回饋作為形成性評量，幫助學生學習調整。"},{"code":"Y4-1","text":"教師能利用數位學習平臺督導學生學習進度、分派作業、提供評量與回饋。"},{"code":"Z1-3","text":"教師能利用共備，持續地發展與累積數位化教材。"},{"code":"Z1-4","text":"學校能提供鼓勵機制，促進教師間協作與專業回饋。"},{"code":"Z2-2","text":"教師能進行跨界、跨國共備與共授，提供學生課程選修的機會。"},{"code":"Y3-1","text":"教師能利用數位化教材進行差異化教學設計，讓學生根據自己能力與程度進行學習。原版兩筆X2-7為不同內涵，本稿保留待權責單位確認，不自行改碼。"}]}]};
+
+const DIM = {
+  KR:{name:"階段性關鍵成果",short:"關鍵成果"},
+  EC:{name:"使用科技的環境與條件",short:"環境條件"},
+  SL:{name:"學生數位學習",short:"學生學習"},
+  TT:{name:"教師的數位教學應用",short:"教師應用"},
+  AS:{name:"行政支持（基礎建設、技術支援、教師增能）",short:"行政支持"}
+};
+const DIMS = ["KR","EC","SL","TT","AS"];
+const PLAN = {
+  a1:{name:"α-1 混成學習",doc:"混成學習與跨校遠距教學實施指南 2.0（1018 版）"},
+  a2:{name:"α-2 跨校遠距共授",doc:"α-2 跨校遠距共授實施指南 2.0（1028 版）"}
+};
+const STAGE = {
+  a1:[
+    {t:"預備階段",pos:"盤點與準備",q:["全校載具、投影與 WiFi 能否支撐多人同時連線？","是否已與師長、家長、學生共同訂定載具與基本 AI 使用約定？","數位核心小組是否已分工並盤點學習資料的來源與管理責任？"]},
+    {t:"第一階段",pos:"導入與實施",q:["是否已有至少 1 個社群把數位科技用到至少 1 門課？","學生與行政人員應用比例是否達 25%（註明母數與期間）？","教師指派任務時，是否事先告知學生可使用 AI 的範圍？"]},
+    {t:"第二階段",pos:"深化與整合",q:["社群數、課程數與 50% 比例是否達成？","AI 共備產出的教材是否經查核後才納入共享資源？","是否已訂定數據治理分工（品質、權限、保存期限、家長告知）？"]},
+    {t:"第三階段",pos:"差異化與優化",q:["是否已有 50% 教師參與、至少 5 門課且分散於不同領域？","平臺紀錄是否與作品、作答交叉判讀，而非只看點擊？","對外分享學生資料時是否評估再辨識風險？"]},
+    {t:"第四階段",pos:"制度化與擴散",q:["是否已有 80% 教師參與，且每個領域至少 1 門課？","採購或續訂前是否檢視使用情形、授權與維運總成本？","是否建立跨年度設備更新、人力交接與區域陪伴機制？"]}
+  ],
+  a2:[
+    {t:"預備階段",pos:"建立合作與倫理基礎",who:"高優學校可達成",q:["本校是開課學校還是合作學校？兩校窗口是否已確認？","課程代碼、備查與「二分之一以上節數即時互動」是否已確認？","雙師分工協議、數據使用告知與 AI 規範是否已完成？"]},
+    {t:"第一階段",pos:"穩定開課",who:"高優學校可達成",q:["兩端的聲音、影像與互動品質是否穩定？","是否以作品、說明與回饋確認學習，而不只看登入或出席？","資訊股長、斷訊備援與資安通報流程是否到位？"]},
+    {t:"第二階段",pos:"深化互動、擴散輔導與數據賦能",who:"前導學校目標",q:["是否至少開設一門課供合作學校選課，並進行公開觀課？","是否引領至少 1 所高優學校加入跨校共授？","跨校數據看板是否先去識別化並建立存取稽核？"]}
+  ]
+};
+const STATUS = [
+  {v:"done",l:"已落實",w:1},{v:"part",l:"部分落實",w:.5},{v:"no",l:"尚未實施",w:0},
+  {v:"tbd",l:"待確認"},{v:"na",l:"不適用"}
+];
+const SLABEL = Object.fromEntries(STATUS.map(s=>[s.v,s.l]));
+const OWNERS = ["數位核心小組","教務處","學務處","總務處","輔導室","圖書館／資訊組","教師社群","兩校窗口（α-2）"];
+const WHEN = ["115 學年上學期","115 學年下學期","115 學年全學年","跨學年"];
+const EVID = {
+  KR:"社群與課程清單、比例計算（註明母數與計算期間）",
+  EC:"設備盤點表、連線測試與改善紀錄",
+  SL:"學生作品、學習歷程、回饋或反思紀錄",
+  TT:"教案、課堂觀察、評量規準與教學調整紀錄",
+  AS:"會議紀錄、規範文件、增能場次與流程文件"
+};
+
+/* ---------- 狀態 ----------
+   UI：每位瀏覽者自己的畫面偏好（存在瀏覽器）。
+   紀錄：連上共用資料庫時存在 schools/<學校>/status|notes|picks，
+   沒有資料庫時（單機模式）存在瀏覽器。 */
+const KEY = "dp-diag-v2";
+function blankData(){return {profile:{name:"",school:"前導學校",role:"未定",g1:false,g2:false},
+  status:{a1:{},a2:{}},notes:{a1:{},a2:{}},picks:{a1:{},a2:{}},meta:{a1:{},a2:{}}};}
+let UI = {plan:"a1",step:0,stage:{a1:0,a2:0},dim:"all",sid:null};
+let LOCAL = blankData(), LIVE = blankData();
+let MODE = "connecting";            // connecting | db | local
+let db = null, user = null, myId = null, canWrite = true;
+let schools = [], schoolUnsubs = [], liveLoaded = false;
+try{
+  const raw = localStorage.getItem(KEY);
+  if(raw){const o=JSON.parse(raw); if(o.ui) UI=Object.assign(UI,o.ui); if(o.local) LOCAL=Object.assign(blankData(),o.local);}
+  else{ // 由先前的單機版（v1）搬過來
+    const v1 = JSON.parse(localStorage.getItem("dp-diag-v1")||"null");
+    if(v1&&v1.status&&!v1.sample){LOCAL=Object.assign(blankData(),{profile:{name:v1.name||"",school:v1.school||"前導學校",role:v1.role||"未定",g1:!!v1.g1,g2:!!v1.g2},status:v1.status,notes:v1.notes||{a1:{},a2:{}},picks:v1.picks||{a1:{},a2:{}}});}
+  }
+}catch(e){}
+function saveUI(){try{localStorage.setItem(KEY,JSON.stringify({ui:UI,local:LOCAL}));}catch(e){}}
+
+const D = ()=>MODE==="db"?LIVE:LOCAL;
+const shared = ()=>MODE==="db";
+const needSchool = ()=>shared()&&!UI.sid;
+const editable = ()=>MODE==="local"||(MODE==="db"&&!!UI.sid&&canWrite);
+const st = ()=>D().status[UI.plan];
+const stages = ()=>DATA[UI.plan];
+
+const esc = s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const $ = (q,el=document)=>el.querySelector(q);
+function toast(msg){const t=$("#toast");t.textContent=msg;t.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>t.hidden=true,2200);}
+
+/* ---------- 共用資料庫寫入 ---------- */
+const docId = (plan,key)=>plan+"~"+key.replace("#",".");
+const fromId = id=>{const i=id.indexOf("~");return {plan:id.slice(0,i),key:id.slice(i+1).replace(".","#")};};
+// 寫入佇列：body 為 null 代表刪除；同一份文件一次只寫一筆且只送最新值，整體最多 4 筆同時進行
+const pend = {}, queue = [], inflight = new Set(), dirty = new Set();
+let active = 0;
+function put(path,body){
+  dirty.add(path);
+  if(!(path in pend)&&!inflight.has(path)) queue.push(path);
+  pend[path]={body}; pump();
+}
+function pump(){ while(active<4&&queue.length){const p=queue.shift(); if(p in pend) run(p);} }
+async function run(path){
+  active++; inflight.add(path);
+  const {body}=pend[path]; delete pend[path];
+  try{ body===null ? await db.doc(path).delete() : await db.doc(path).set(body); }
+  catch(e){
+    const c=e&&e.code;
+    if(c==="invalid_argument"){canWrite=false;toast("你目前沒有寫入權限，已改為唯讀");render();}
+    else if(c==="quota_exceeded") toast("資料庫已滿，無法再新增紀錄："+(e.message||""));
+    else if(c==="revoked") toast("存取權限已變更，請重新整理頁面");
+    else toast("儲存失敗，請稍後再試一次");
+  }
+  inflight.delete(path); active--;
+  if(path in pend) queue.push(path); else dirty.delete(path);
+  pump();
+}
+const base = ()=>"schools/"+UI.sid;
+const stamp = ()=>({by:myId,at:Date.now()});
+function persist(){ if(MODE==="local") saveUI(); }
+
+function setStatus(key,v){
+  const d=D(), plan=UI.plan;
+  if(v) d.status[plan][key]=v; else delete d.status[plan][key];
+  if(shared()){d.meta[plan][key]=stamp(); put(`${base()}/status/${docId(plan,key)}`, v?{v,...stamp()}:null);}
+  persist();
+}
+const noteTimers = {};
+function setNote(key,text,immediate){
+  const d=D(), plan=UI.plan;
+  if(text===undefined) delete d.notes[plan][key]; else d.notes[plan][key]=text;
+  persist();
+  if(!shared()) return;
+  const path=`${base()}/notes/${docId(plan,key)}`; dirty.add(path);
+  clearTimeout(noteTimers[path]);
+  const go=()=>put(path, text?{text,...stamp()}:null);
+  if(immediate) go(); else noteTimers[path]=setTimeout(go,700);
+}
+const pickTimers = {};
+function setPick(key,obj,immediate){
+  const d=D(), plan=UI.plan;
+  if(obj) d.picks[plan][key]=obj; else delete d.picks[plan][key];
+  persist();
+  if(!shared()) return;
+  const path=`${base()}/picks/${docId(plan,key)}`; dirty.add(path);
+  clearTimeout(pickTimers[path]);
+  const go=()=>put(path, obj?{...obj,...stamp()}:null);
+  if(immediate) go(); else pickTimers[path]=setTimeout(go,700);
+}
+let profTimer;
+function setProfile(patch,immediate){
+  Object.assign(D().profile,patch); persist();
+  if(!shared()) return;
+  const path=base(); dirty.add(path); clearTimeout(profTimer);
+  const go=()=>put(path,{...D().profile,updatedAt:Date.now()});
+  if(immediate) go(); else profTimer=setTimeout(go,700);
+}
+
+/* ---------- 共用資料庫讀取 ---------- */
+let pendingRender=false;
+function schedule(){
+  const a=document.activeElement;
+  if(a&&a.closest&&a.closest("#app")&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)){pendingRender=true;return;}
+  render();
+}
+document.addEventListener("focusout",()=>{if(pendingRender){pendingRender=false;setTimeout(schedule,0);}});
+function dbError(e){ if(e&&e.code==="revoked") toast("存取權限已變更，請重新整理頁面"); }
+
+function subscribeSchool(sid){
+  schoolUnsubs.forEach(u=>u()); schoolUnsubs=[]; LIVE=blankData(); liveLoaded=false;
+  if(!sid) return;
+  let got=0;
+  const ready=()=>{if(++got===4){liveLoaded=true;} schedule();};
+  schoolUnsubs.push(db.doc("schools/"+sid).onSnapshot(s=>{
+    if(!dirty.has("schools/"+sid)&&s.exists) LIVE.profile=Object.assign(blankData().profile,s.data());
+    if(!s.exists&&!s.metadata.fromCache){UI.sid=null;saveUI();toast("這個學校工作區已不存在");}
+    ready();
+  },dbError));
+  for(const c of ["status","notes","picks"]){
+    let first=true;
+    schoolUnsubs.push(db.collection(`schools/${sid}/${c}`).onSnapshot(qs=>{
+      const fresh={a1:{},a2:{}}, meta={a1:{},a2:{}};
+      for(const d of qs.docs){
+        const {plan,key}=fromId(d.id), x=d.data(); if(!fresh[plan]) continue;
+        if(c==="status"){fresh[plan][key]=x.v; meta[plan][key]={by:x.by,at:x.at};}
+        else if(c==="notes") fresh[plan][key]=x.text;
+        else fresh[plan][key]={owner:x.owner,when:x.when,evidence:x.evidence,action:x.action||""};
+      }
+      // 自己還沒寫完的欄位保留本機值，避免打字中被舊值蓋掉
+      for(const plan of ["a1","a2"]) for(const k of Object.keys(LIVE[c][plan]))
+        if(dirty.has(`schools/${sid}/${c}/${docId(plan,k)}`)) fresh[plan][k]=LIVE[c][plan][k];
+      LIVE[c]=fresh; if(c==="status") LIVE.meta=meta;
+      if(first){first=false;ready();} else schedule();
+    },dbError));
+  }
+}
+function chooseSchool(sid){UI.sid=sid;saveUI();subscribeSchool(sid);render();}
+async function createSchool(name){
+  name=name.trim(); if(!name){toast("請先輸入學校名稱");return;}
+  if(schools.some(s=>s.name===name)){toast("已有同名的工作區，請直接點選它");return;}
+  const ref=db.collection("schools").doc();
+  try{
+    await ref.set({...blankData().profile,name,createdBy:myId,createdAt:Date.now(),updatedAt:Date.now()});
+    chooseSchool(ref.id); toast("已建立「"+name+"」工作區");
+  }catch(e){ if(e&&e.code==="invalid_argument"){canWrite=false;toast("你目前沒有寫入權限，無法建立工作區");render();} else toast("建立失敗，請稍後再試一次"); }
+}
+async function importInto(src){   // 把一份紀錄（本機舊資料或備份碼）寫進目前的學校工作區
+  let n=0;
+  if(src.profile&&!D().profile.name) setProfile({...src.profile,name:D().profile.name||src.profile.name},true);
+  for(const plan of ["a1","a2"]){
+    const keep=UI.plan; UI.plan=plan;
+    for(const [k,v] of Object.entries((src.status||{})[plan]||{})){setStatus(k,v);n++;}
+    for(const [k,v] of Object.entries((src.notes||{})[plan]||{})) if(v) setNote(k,v,true);
+    for(const [k,v] of Object.entries((src.picks||{})[plan]||{})) setPick(k,v,true);
+    UI.plan=keep;
+  }
+  render(); toast(`已匯入 ${n} 筆盤點紀錄`);
+}
+
+/* ---------- 啟動 ---------- */
+async function boot(){
+  render();
+  const c=window.claude;
+  if(!c||typeof c.use!=="function"){MODE="local";render();return;}
+  const [d,u]=await Promise.all([c.use("db"),c.use("user")]);
+  user=u;
+  if(!d){MODE="local";render();return;}
+  db=d; myId=user?await user.id():null;
+  const cw=user?await user.can("data.write"):null; canWrite=cw!==false;
+  MODE="db";
+  db.collection("schools").onSnapshot(qs=>{
+    schools=qs.docs.map(x=>({id:x.id,...x.data()})).sort((a,b)=>String(a.name).localeCompare(String(b.name),"zh-Hant"));
+    schedule();
+  },dbError);
+  if(UI.sid) subscribeSchool(UI.sid);
+  render();
+}
+
+function gammaOptional(it){
+  if(UI.plan!=="a2"||!it.gamma.length) return false;
+  const g=it.gamma.join(" "), p=D().profile;
+  return !((/γ-1/.test(g)&&p.g1)||(/γ-2/.test(g)&&p.g2));
+}
+
+/* ---------- 計分 ---------- */
+function score(items){
+  let sum=0,app=0,rated=0,tbd=0,na=0;
+  for(const it of items){
+    const v=st()[it.key]; if(!v) continue; rated++;
+    if(v==="tbd"){tbd++;continue;} if(v==="na"){na++;continue;}
+    app++; sum+=STATUS.find(s=>s.v===v).w;
+  }
+  return {total:items.length,rated,app,tbd,na,score:app?sum/app:null};
+}
+function verdict(stage){
+  const all=score(stage.items), kr=score(stage.items.filter(i=>i.dim==="KR"));
+  if(all.rated/all.total<.5) return {k:"unrated",l:"盤點未完成",all,kr};
+  if(all.app===0) return {k:"na",l:"不適用",all,kr};
+  if(all.score>=.7&&(kr.score===null||kr.score>=.8)) return {k:"stable",l:"已穩定",all,kr};
+  if(all.score>=.35) return {k:"progress",l:"推進中",all,kr};
+  return {k:"start",l:"起步中",all,kr};
+}
+function focusStage(){
+  const list=stages();
+  for(let i=0;i<list.length;i++){const v=verdict(list[i]); if(v.k!=="stable"&&v.k!=="na") return {i,v,allStable:false};}
+  return {i:list.length-1,v:verdict(list[list.length-1]),allStable:true};
+}
+const pct = x=>x===null?"—":Math.round(x*100)+"%";
+const fmtTime = t=>t?new Date(t).toLocaleString("zh-TW",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit",hour12:false}):"";
+
+/* ---------- 頂部 ---------- */
+const STEPS=["選擇方案","導讀與盤點","診斷結果","年度改善方案"];
+function renderTop(){
+  $("#steps").innerHTML=STEPS.map((s,i)=>`<button data-step="${i}" ${UI.step===i?'aria-current="step"':""}><span class="n">${i+1}</span>${s}</button>`).join("");
+  const name=D().profile.name;
+  $("#brandsub").textContent=`${PLAN[UI.plan].name}${name?"｜"+name:""}｜實施指南 2.0 討論版`;
+  const sy=$("#sync");
+  const [cls,txt]=MODE==="connecting"?["","連線中"]:MODE==="local"?["local","單機模式"]
+    :!UI.sid?["on","共用紀錄・未選學校"]:!canWrite?["ro","共用紀錄・唯讀"]:["on","共用紀錄・即時同步"];
+  sy.className="sync "+cls; sy.lastElementChild.textContent=txt;
+}
+document.addEventListener("click",e=>{const b=e.target.closest("[data-step]"); if(b) go(+b.dataset.step);});
+function go(n){UI.step=n;saveUI();render();window.scrollTo({top:0});}
+
+function banners(){
+  let h="";
+  if(MODE==="db"&&UI.sid&&!canWrite) h+=`<div class="banner"><span>你目前只有<b>檢視</b>權限，可以閱讀本校紀錄但無法標記。請向這個頁面的擁有者要求「Contributor（參與者）」以上的權限。</span></div>`;
+  return h;
+}
+function needSchoolView(){
+  return `<section class="view">${banners()}<div class="empty" style="display:grid;gap:12px;justify-items:center"><p>請先在步驟一選擇或建立你們學校的工作區，全校成員才會看到同一份盤點紀錄。</p><button class="btn" data-step="0">前往選擇學校</button></div></section>`;
+}
+
+/* ---------- 步驟 1：選擇方案 ---------- */
+function schoolPanel(){
+  if(MODE==="connecting") return `<div class="panel"><span class="label">一、學校工作區</span><p class="muted">正在連線共用紀錄……</p></div>`;
+  if(MODE==="local") return `<div class="panel"><span class="label">一、學校資料（單機模式）</span>
+    <p class="small muted">目前無法連上共用紀錄（例如在 claude.ai 以外開啟、或尚未登入），盤點只會存在這台電腦的瀏覽器。登入 claude.ai 後開啟此頁即可與同校成員共用。</p>
+    <div class="field"><label for="schoolName">學校名稱</label><input type="text" id="schoolName" value="${esc(D().profile.name)}" placeholder="例如：○○高級中學"></div></div>`;
+  const cur=schools.find(s=>s.id===UI.sid);
+  const hasLocal=Object.values(LOCAL.status).some(o=>Object.keys(o).length);
+  return `<div class="panel"><span class="label">一、選擇學校工作區（全校成員共用同一份紀錄）</span>
+    ${schools.length?`<div class="schools">${schools.map(s=>`<button data-sid="${esc(s.id)}" aria-pressed="${s.id===UI.sid}"><b>${esc(s.name||"未命名")}</b><small>${esc(s.school||"")}${s.updatedAt?"・"+fmtTime(s.updatedAt)+" 更新":""}</small></button>`).join("")}</div>`
+      :`<p class="muted small">還沒有任何學校工作區。第一位成員建立後，其他成員打開此頁點選即可加入。</p>`}
+    ${canWrite?`<div class="newschool"><input type="text" id="newSchool" placeholder="新學校名稱，例如：○○高級中學"><button class="btn ghost" id="createSchool">建立工作區</button></div>`:""}
+    ${cur?`<div class="field"><label for="schoolName">工作區名稱</label><input type="text" id="schoolName" value="${esc(D().profile.name)}" ${editable()?"":"disabled"}></div>`:""}
+    ${cur&&hasLocal&&canWrite?`<div class="banner"><span>這台電腦上有先前單機版的盤點紀錄。</span><button class="btn quiet" id="importLocal">匯入到「${esc(D().profile.name)}」</button></div>`:""}
+  </div>`;
+}
+function viewSetup(){
+  const p=D().profile, a2=UI.plan==="a2", dis=editable()?"":"disabled";
+  return `<section class="view">
+  ${banners()}
+  <div style="display:grid;gap:8px"><h1>先選定學校與指南，再一起逐項盤點本校現況</h1>
+  <p class="lede">這個工具依兩份「實施指南 2.0 討論版」的原指標，帶校內團隊逐階段閱讀、標記落實情形，最後產生各構面的診斷與本學年的優先改善方案。同一所學校的成員看到的是同一份紀錄，任何人標記後其他人會即時看到。</p></div>
+
+  ${schoolPanel()}
+
+  <div class="panel"><span class="label">二、選擇實施部分（只影響你自己的畫面）</span>
+    <div class="choice">
+      <button data-plan="a1" aria-pressed="${UI.plan==="a1"}"><b>α-1 混成學習</b><span>校內混成學習。預備＋四個階段，共 ${count("a1")} 項指標。</span></button>
+      <button data-plan="a2" aria-pressed="${a2}"><b>α-2 跨校遠距共授</b><span>開課學校與合作學校。預備＋兩個階段，共 ${count("a2")} 項指標，含 γ-1／γ-2 對應項目。</span></button>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="panel"><span class="label">三、學校基本資料（全校共用）</span>
+      ${needSchool()?`<p class="small muted">選擇學校工作區後即可設定。</p>`:`
+      <div class="field"><span>學校類型</span><div class="seg" data-group="school">${["前導學校","高優學校"].map(x=>`<button data-val="${x}" aria-pressed="${p.school===x}" ${dis}>${x}</button>`).join("")}</div></div>
+      ${a2?`<div class="field"><span>跨校角色</span><div class="seg" data-group="role">${["開課學校","合作學校","未定"].map(x=>`<button data-val="${x}" aria-pressed="${p.role===x}" ${dis}>${x}</button>`).join("")}</div></div>
+      <div class="field"><span>115 學年選辦的 γ 計畫（至少選辦一項；未辦理者可擇項參照）</span><div class="seg">
+        <button data-g="g1" aria-pressed="${!!p.g1}" ${dis}>γ-1 AI 賦能教學</button><button data-g="g2" aria-pressed="${!!p.g2}" ${dis}>γ-2 數據治理</button></div></div>`:`<p class="small muted">跨校角色與 γ 計畫在選擇 α-2 時設定。</p>`}`}
+    </div>
+    <div class="panel"><span class="label">怎麼讀這份指南</span>
+      <div class="dimlegend">${DIMS.map(d=>`<div><span class="chip d-${d}">${d}</span><span>${DIM[d].name}</span></div>`).join("")}</div>
+      <p class="small muted">每項指標第一句為指標本文，其後灰字為 2.0 版的執行說明。標有<span class="tag new">新增</span>者為暫編指標，尚待權責單位確認。</p>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="panel"><span class="label">盤點方式</span>
+      <ol class="flow">
+        <li>可分工進行：例如教務處盤點 TT、總務處盤點 EC，各自標記後全校共用同一份結果。</li>
+        <li>每個階段先讀「閱讀提問」，再逐項標記：已落實、部分落實、尚未實施、待確認、不適用。</li>
+        <li>資料不足就標「待確認」，診斷時另列為先補資料的項目，不計入落實比例。</li>
+        <li>診斷只作校內盤點，不作學校排名或等第；正式回報仍依核定表單。</li>
+      </ol>
+    </div>
+    <div class="panel"><span class="label">${a2?"跨校課程的法規提醒":"適用提醒"}</span>
+      ${a2?`<p class="law">適用遠距要點第 3 點的課程，<b>至少二分之一節數須即時互動</b>；其餘節數得採實體授課、測驗、報告、實作、主題探究或指定閱讀，且不套用到校內混成活動。</p>
+      <p class="law">《學生學習評量辦法》第 19 條所列課程須納入課程計畫並備查；評量、學分與登錄由合作雙方協議。</p>
+      <p class="law">指南未另增固定人力、津貼或減授承諾；合作教師依需要與規定排定。</p>`
+      :`<p class="law">AI 依課程需要選用，不要求所有師生使用相同工具；使用前確認工具適齡、帳號條件與家長知情同意機制。</p>
+      <p class="law">KR 的學生面、行政面比例屬「建議自訂」；計算人數與比例時請註明母數及計算期間。</p>
+      <p class="law">第三、四階段的成效評估機制（AS-3-6、AS-4-4）維持鼓勵性質。</p>`}
+    </div>
+  </div>
+
+  <div class="btnrow"><button class="btn" data-step="1" ${needSchool()?"disabled":""}>開始導讀與盤點</button></div>
+  </section>`;
+}
+function count(p){return DATA[p].reduce((a,s)=>a+s.items.length,0);}
+
+/* ---------- 步驟 2：導讀與盤點 ---------- */
+function itemHTML(it){
+  const v=st()[it.key]||"", note=D().notes[UI.plan][it.key], m=D().meta[UI.plan][it.key];
+  const opt=gammaOptional(it);
+  return `<article class="item" data-s="${v}" data-key="${esc(it.key)}">
+    <div class="code"><span class="d-${it.dim}">${esc(it.code)}</span>${it.face?`<small>${esc(it.face)}</small>`:""}</div>
+    <div class="body">
+      <p class="t">${esc(it.title)}</p>
+      ${it.note?`<p class="nt">${esc(it.note)}</p>`:""}
+      ${(it.new||it.gamma.length||it.cites.length||it.dup||opt)?`<div class="tags">
+        ${it.new?`<span class="tag new">新增・暫編</span>`:""}
+        ${it.dup?`<span class="tag new">原稿代碼重複</span>`:""}
+        ${it.gamma.map(g=>`<span class="tag g">${esc(g)}</span>`).join("")}
+        ${opt?`<span class="tag opt">本校未選辦，可擇項參照</span>`:""}
+        ${it.cites.map(c=>`<span class="tag">文獻 ${esc(c)}</span>`).join("")}
+      </div>`:""}
+    </div>
+    <div class="status" role="group" aria-label="${esc(it.code)} 落實情形">
+      ${STATUS.map(s=>`<button data-v="${s.v}" aria-pressed="${v===s.v}">${s.l}</button>`).join("")}
+      <button class="addnote" data-note>${note!==undefined?"收合佐證":"加註佐證"}</button>
+    </div>
+    ${v&&m&&m.by?`<span class="who">由 <span data-uid="${esc(m.by)}">成員</span> 於 ${fmtTime(m.at)} 標記</span>`:""}
+    ${note!==undefined?`<textarea rows="2" id="note-${UI.plan}-${esc(it.key)}" placeholder="例如：已有 113 學年社群紀錄；負責人：教學組長" ${editable()?"":"disabled"}>${esc(note)}</textarea>`:""}
+  </article>`;
+}
+function viewRead(){
+  if(needSchool()) return needSchoolView();
+  const list=stages(), n=Math.min(UI.stage[UI.plan],list.length-1), stage=list[n], info=STAGE[UI.plan][n];
+  const sc=score(stage.items);
+  const items=stage.items.filter(i=>UI.dim==="all"||(UI.dim==="todo"?!st()[i.key]:i.dim===UI.dim));
+  const optCount=stage.items.filter(gammaOptional).length;
+  const groups=DIMS.map(d=>({d,items:items.filter(i=>i.dim===d)})).filter(g=>g.items.length);
+  return `<section class="view">
+  ${banners()}
+  <div class="stagetabs" role="tablist">${list.map((s,i)=>{const c=score(s.items);return `<button role="tab" data-stage="${i}" aria-selected="${i===n}">
+    <span class="small">${STAGE[UI.plan][i].t}</span><b>${STAGE[UI.plan][i].pos}</b>
+    <span class="bar"><i style="width:${Math.round(c.rated/c.total*100)}%"></i></span></button>`}).join("")}</div>
+
+  <div class="stagehead">
+    <div style="display:grid;gap:10px">
+      <h2>${PLAN[UI.plan].name}・${info.t}：${info.pos}</h2>
+      ${info.who?`<p class="small"><span class="pill ${info.who.startsWith("前導")?"v-progress":"v-stable"}">${info.who}</span>${D().profile.school==="高優學校"&&info.who.startsWith("前導")?"　本階段為前導學校的深化與擴散目標，高優學校可擇項挑戰。":""}</p>`:""}
+      <div><span class="label">閱讀提問</span><ul class="qs">${info.q.map(q=>`<li>${esc(q)}</li>`).join("")}</ul></div>
+    </div>
+    <div class="progress"><div class="label">本階段已盤點</div><div style="font-size:1.5rem">${sc.rated} / ${sc.total}</div></div>
+  </div>
+
+  <div class="filters"><span class="small muted">顯示：</span>
+    ${[["all","全部"],["todo","尚未標記"],...DIMS.map(d=>[d,DIM[d].short])].map(([k,l])=>`<button data-dim="${k}" aria-pressed="${UI.dim===k}">${l}</button>`).join("")}
+    ${optCount&&editable()?`<button class="btn quiet small" id="naGamma" style="margin-left:auto;padding:3px 12px">將未選辦 γ 項目標為不適用（${optCount}）</button>`:""}
+  </div>
+
+  ${groups.length?groups.map(g=>`<div class="dimgroup"><h3><span class="chip d-${g.d}">${g.d}</span>${DIM[g.d].name}</h3>${g.items.map(itemHTML).join("")}</div>`).join("")
+    :`<div class="empty">這個篩選條件下沒有指標。${UI.dim==="todo"?"本階段已全部標記完成。":""}</div>`}
+
+  ${stage.refs.length?`<details class="refs panel"><summary>本階段對照的 2024 版回報參考指標（${stage.refs.length} 項）</summary>
+    <ul>${stage.refs.map(r=>`<li><span class="mono">${esc(r.code)}</span>　${esc(r.text)}</li>`).join("")}</ul>
+    <p class="small muted">供對照用；當期正式回報仍依核定表單辦理。</p></details>`:""}
+
+  <div class="pager">
+    ${n>0?`<button class="btn quiet" data-stage="${n-1}">← ${STAGE[UI.plan][n-1].t}</button>`:`<span></span>`}
+    ${n<list.length-1?`<button class="btn" data-stage="${n+1}">下一個：${STAGE[UI.plan][n+1].t} →</button>`:`<button class="btn" data-step="2">查看診斷結果 →</button>`}
+  </div>
+  </section>`;
+}
+
+/* ---------- 步驟 3：診斷 ---------- */
+function viewDiag(){
+  if(needSchool()) return needSchoolView();
+  const list=stages(), f=focusStage(), fi=STAGE[UI.plan][f.i], p=D().profile;
+  const total=list.reduce((a,s)=>a+score(s.items).rated,0), all=count(UI.plan);
+  let head;
+  if(total===0) head=`<div class="big">尚未開始盤點</div><p>請先到「導讀與盤點」標記各指標的落實情形，診斷會依標記即時更新。</p>`;
+  else if(f.allStable) head=`<div class="big">各階段均已穩定</div><p>建議以「${fi.pos}」為主軸，維持成果並透過區域共享、示範陪伴其他學校。</p>`;
+  else if(f.v.k==="unrated") head=`<div class="big">建議先完成${fi.t}的盤點</div><p>${fi.t}（${fi.pos}）只標記了 ${f.v.all.rated} / ${f.v.all.total} 項，資料不足以判斷，請先補齊。</p>`;
+  else head=`<div class="big">本學年建議聚焦：${fi.t}・${fi.pos}</div><p>${f.i>0?"前面的階段已穩定；":""}${fi.t}目前「${f.v.l}」，落實比例 ${pct(f.v.all.score)}，關鍵成果（KR）${pct(f.v.kr.score)}。</p>`;
+  const hiNote = UI.plan==="a2"&&p.school==="高優學校"&&f.i===2&&!f.allStable&&f.v.k!=="unrated"?`<p class="small">本校已達高優學校的基本目標（預備、第一階段）；第二階段為前導學校目標，可擇項挑戰。</p>`:"";
+
+  const fs=list[f.i];
+  const dimRows=DIMS.map(d=>{const its=fs.items.filter(i=>i.dim===d); if(!its.length) return ""; const c=its.reduce((a,i)=>{const v=st()[i.key]; a[v||"un"]=(a[v||"un"]||0)+1; return a;},{});
+    const sc=score(its); const seg=v=>c[v]?`<i style="width:${c[v]/its.length*100}%;background:var(--${v==="un"?"sunk":v})" title="${v==="un"?"未標記":SLABEL[v]} ${c[v]} 項"></i>`:"";
+    return `<div class="dimbar"><span><span class="chip d-${d}">${d}</span> ${DIM[d].short}</span><span class="track">${["done","part","no","tbd","na","un"].map(seg).join("")}</span><span class="pct">${pct(sc.score)}</span></div>`;}).join("");
+  const scored=DIMS.map(d=>({d,s:score(fs.items.filter(i=>i.dim===d)).score})).filter(x=>x.s!==null).sort((a,b)=>a.s-b.s);
+  const tbdAll=list.flatMap(s=>s.items).filter(i=>st()[i.key]==="tbd");
+  const contrib={}; for(const m of Object.values(D().meta[UI.plan])) if(m&&m.by) contrib[m.by]=(contrib[m.by]||0)+1;
+
+  return `<section class="view">
+  ${banners()}
+  <div class="verdict"><span class="label">${PLAN[UI.plan].name}${p.name?"・"+esc(p.name):""}・已盤點 ${total} / ${all} 項</span>${head}${hiNote}</div>
+
+  <div class="panel"><h2>各階段 × 構面落實比例</h2>
+    <p class="small muted">落實比例＝（已落實×1＋部分落實×0.5）÷ 適用項目數；待確認、不適用不列入分母。「已穩定」的參考門檻：整體 70% 以上且 KR 80% 以上。</p>
+    <div class="tablebox"><table class="heat"><thead><tr><th>階段</th>${DIMS.map(d=>`<th><span class="chip d-${d}">${d}</span> ${DIM[d].short}</th>`).join("")}<th>整體</th></tr></thead><tbody>
+    ${list.map((s,i)=>{const v=verdict(s);return `<tr><th class="st"><b>${STAGE[UI.plan][i].t}</b><span class="pill v-${v.k}">${v.l}</span></th>
+      ${DIMS.map(d=>{const its=s.items.filter(x=>x.dim===d); if(!its.length) return `<td>—</td>`; const c=score(its);
+        const bg=c.score===null?"var(--sunk)":`color-mix(in srgb, var(--done) ${Math.round(12+c.score*58)}%, var(--surface))`;
+        return `<td style="background:${bg}">${pct(c.score)}<small>已標 ${c.rated}/${c.total}${c.tbd?`・${c.tbd} 待確認`:""}</small></td>`}).join("")}
+      <td style="background:${v.all.score===null?"var(--sunk)":`color-mix(in srgb, var(--accent) ${Math.round(10+v.all.score*45)}%, var(--surface))`}"><b>${pct(v.all.score)}</b><small>${v.all.rated}/${v.all.total}</small></td></tr>`}).join("")}
+    </tbody></table></div>
+    <div class="legend"><span><i style="background:color-mix(in srgb,var(--done) 15%,var(--surface))"></i>落實比例低</span><span><i style="background:color-mix(in srgb,var(--done) 70%,var(--surface))"></i>落實比例高</span><span><i style="background:var(--sunk)"></i>尚無可計算資料</span></div>
+  </div>
+
+  <div class="grid2">
+    <div class="panel"><h3>${fi.t}的構面分布</h3><div class="dimbars">${dimRows}</div>
+      <div class="legend"><span><i style="background:var(--done)"></i>已落實</span><span><i style="background:var(--part)"></i>部分</span><span><i style="background:var(--no)"></i>尚未</span><span><i style="background:var(--tbd)"></i>待確認</span><span><i style="background:var(--na)"></i>不適用</span></div></div>
+    <div class="panel"><h3>判讀重點</h3><ul class="qs" style="color:var(--ink)">
+      ${scored.length?`<li>相對強項：<b>${DIM[scored[scored.length-1].d].short}</b>（${pct(scored[scored.length-1].s)}）。可作為帶動其他構面的基礎。</li>
+      <li>最需補強：<b>${DIM[scored[0].d].short}</b>（${pct(scored[0].s)}）。改善方案會優先從這裡挑選。</li>`:"<li>本階段尚無可計算的構面。</li>"}
+      ${tbdAll.length?`<li>全部階段共有 <b>${tbdAll.length}</b> 項「待確認」，建議先向負責處室確認資料再定案。</li>`:""}
+      <li>本診斷只作校內盤點與討論，不作學校排名或平均等第；正式判讀與表單欄位依權責單位核定。</li>
+    </ul>
+    ${Object.keys(contrib).length?`<div><span class="label">參與這份盤點的成員</span><div class="people">${Object.entries(contrib).sort((a,b)=>b[1]-a[1]).map(([id,n])=>`<span><img data-avatar="${esc(id)}" alt=""><span data-uid="${esc(id)}">成員</span><span class="muted mono">${n}</span></span>`).join("")}</div></div>`:""}
+    </div>
+  </div>
+  <div class="btnrow"><button class="btn quiet" data-step="1">← 回到盤點</button><button class="btn" data-step="3">產生年度改善方案 →</button></div>
+  </section>`;
+}
+
+/* ---------- 步驟 4：方案 ---------- */
+function suggestions(){
+  const list=stages(), f=focusStage(), fs=list[f.i];
+  const by=v=>fs.items.filter(i=>(st()[i.key]||"")===v);
+  const krFirst=a=>a.slice().sort((x,y)=>(x.dim==="KR"?0:1)-(y.dim==="KR"?0:1));
+  const next=list[f.i+1];
+  return {f,fs,groups:[
+    {t:"補強已起步的項目",d:"已部分落實，補足後最快看到成效。",items:krFirst(by("part"))},
+    {t:"本學年新啟動",d:"尚未實施；KR 排在最前面。",items:krFirst(by("no"))},
+    {t:"先確認資料",d:"標為待確認，建議先釐清現況再決定是否列入。",items:by("tbd")},
+    {t:"尚未盤點",d:"還沒標記，可回到盤點補上。",items:by("")},
+    ...(next&&!f.allStable?[{t:`預告：${STAGE[UI.plan][f.i+1].t}的關鍵成果`,d:"下一階段要達成的目標，可提早準備。",items:next.items.filter(i=>i.dim==="KR"&&st()[i.key]!=="done")}]:[])
+  ].filter(g=>g.items.length)};
+}
+function findItem(key){for(const s of stages()) for(const it of s.items) if(it.key===key) return {it,stage:s.n}; return null;}
+function viewPlan(){
+  if(needSchool()) return needSchoolView();
+  const {f,groups}=suggestions(), picks=D().picks[UI.plan], keys=Object.keys(picks).filter(findItem);
+  const fi=STAGE[UI.plan][f.i], dis=editable()?"":"disabled";
+  return `<section class="view">
+  ${banners()}
+  <div style="display:grid;gap:8px"><h1>年度改善方案</h1>
+  <p class="lede">依診斷結果，從${fi.t}（${fi.pos}）挑出建議項目。指南建議選定少數優先工作，這裡以 3 至 5 項為宜；勾選後在右側填入負責單位、期程與佐證。這份方案全校成員共用。</p></div>
+
+  <div class="grid2" style="align-items:start">
+    <div class="panel"><div class="btnrow" style="justify-content:space-between"><h2>建議項目</h2>${editable()?`<button class="btn ghost" id="autoPick">依診斷自動挑選</button>`:""}</div>
+      ${groups.length?groups.map(g=>`<div class="sug"><div><b>${g.t}</b>　<span class="small muted">${g.d}</span></div>
+        ${g.items.map(it=>`<div class="sugitem"><input type="checkbox" id="pick-${esc(it.key)}" data-pick="${esc(it.key)}" ${picks[it.key]?"checked":""} ${dis}>
+          <label for="pick-${esc(it.key)}"><span><span class="mono d-${it.dim}">${esc(it.code)}</span>　${esc(it.title)}</span>
+          ${it.note?`<span class="nt">${esc(it.note)}</span>`:""}
+          ${gammaOptional(it)?`<span class="tags"><span class="tag opt">本校未選辦 ${esc(it.gamma.join("、"))}，可擇項參照</span></span>`:""}</label></div>`).join("")}</div>`).join("")
+      :`<div class="empty">目前沒有待改善的項目。可回到盤點檢查，或直接選擇下一階段的目標。</div>`}
+    </div>
+
+    <div class="panel"><div class="btnrow" style="justify-content:space-between"><h2>本校優先工作</h2><span class="counter ${keys.length>5?"warn":""}">已選 ${keys.length} 項${keys.length>5?"（建議不超過 5 項）":""}</span></div>
+      ${keys.length?keys.map((k,idx)=>{const {it,stage}=findItem(k), p=picks[k];
+        return `<div class="planrow" data-row="${esc(k)}"><div class="head"><span class="mono">${idx+1}</span><span class="chip d-${it.dim}">${esc(it.code)}</span><span class="small muted">${STAGE[UI.plan][stage].t}・${DIM[it.dim].short}</span>${editable()?`<button class="x" data-unpick="${esc(k)}">移除</button>`:""}</div>
+          <p>${esc(it.title)}</p>
+          <div class="fields">
+            <div class="field"><label class="small" for="own-${esc(k)}">負責單位</label><select id="own-${esc(k)}" data-f="owner" ${dis}>${OWNERS.map(o=>`<option ${p.owner===o?"selected":""}>${o}</option>`).join("")}</select></div>
+            <div class="field"><label class="small" for="when-${esc(k)}">期程</label><select id="when-${esc(k)}" data-f="when" ${dis}>${WHEN.map(o=>`<option ${p.when===o?"selected":""}>${o}</option>`).join("")}</select></div>
+          </div>
+          <div class="field"><label class="small" for="ev-${esc(k)}">預計佐證</label><input type="text" id="ev-${esc(k)}" data-f="evidence" value="${esc(p.evidence)}" ${dis}></div>
+          <div class="field"><label class="small" for="act-${esc(k)}">具體做法</label><textarea id="act-${esc(k)}" rows="2" data-f="action" placeholder="參考左側灰字的執行說明，寫下本校要做的事" ${dis}>${esc(p.action||"")}</textarea></div>
+        </div>`}).join("")
+      :`<div class="empty">尚未選擇項目。勾選左側建議${editable()?"，或按「依診斷自動挑選」":""}。</div>`}
+    </div>
+  </div>
+
+  <div class="panel"><h2>帶走這份方案</h2>
+    <p class="small muted">「複製方案文字」可貼到 Word、雲端文件或 Email。「複製備份碼」保存目前整份紀錄，必要時可用「還原備份」寫回${shared()?"本校工作區（會覆寫相同指標的紀錄）":"這台電腦"}。</p>
+    <div class="btnrow"><button class="btn" id="copyPlan">複製方案文字</button><button class="btn ghost" id="copyBackup">複製備份碼</button>${editable()?`<button class="btn quiet" id="showRestore">還原備份</button>`:""}${MODE==="local"?`<button class="btn quiet" id="resetAll">清除本機資料</button>`:""}</div>
+    <textarea id="copyout" rows="8" hidden></textarea>
+    <div id="restoreBox" hidden class="field"><label for="restoreIn">貼上備份碼</label><textarea id="restoreIn" rows="4"></textarea><div class="btnrow"><button class="btn" id="doRestore">載入</button></div></div>
+    <div id="resetBox" hidden class="banner"><span>確定要清除這台電腦上的所有盤點、註記與方案嗎？此動作無法復原。</span><span class="btnrow"><button class="btn" id="doReset" style="background:var(--mark);border-color:var(--mark)">確定清除</button><button class="btn quiet" id="cancelReset">取消</button></span></div>
+  </div>
+  </section>`;
+}
+function planText(){
+  const list=stages(), f=focusStage(), d=D(), p=d.profile, picks=d.picks[UI.plan];
+  const L=[];
+  L.push(`【${p.name||"本校"}】${PLAN[UI.plan].name} 自我診斷與年度改善方案`);
+  L.push(`對照文件：${PLAN[UI.plan].doc}｜學校類型：${p.school}${UI.plan==="a2"?`｜角色：${p.role}｜選辦：${[p.g1&&"γ-1",p.g2&&"γ-2"].filter(Boolean).join("、")||"未填"}`:""}`);
+  L.push("");L.push("一、各階段診斷");
+  list.forEach((s,i)=>{const v=verdict(s);L.push(`・${STAGE[UI.plan][i].t}（${STAGE[UI.plan][i].pos}）：${v.l}，落實比例 ${pct(v.all.score)}，KR ${pct(v.kr.score)}，已盤點 ${v.all.rated}/${v.all.total}`+(v.all.tbd?`，待確認 ${v.all.tbd} 項`:""));});
+  L.push(`建議聚焦：${STAGE[UI.plan][f.i].t}・${STAGE[UI.plan][f.i].pos}`);
+  L.push("");L.push("二、年度優先改善工作");
+  const keys=Object.keys(picks).filter(findItem);
+  if(!keys.length) L.push("（尚未選定）");
+  keys.forEach((k,i)=>{const {it,stage}=findItem(k),q=picks[k];
+    L.push(`${i+1}. ${it.code}（${STAGE[UI.plan][stage].t}・${DIM[it.dim].short}）${it.title}`);
+    L.push(`   負責：${q.owner}｜期程：${q.when}｜佐證：${q.evidence}`);
+    if(q.action) L.push(`   做法：${q.action}`);});
+  L.push("");L.push("註：本診斷僅供校內盤點討論，不作排名；正式回報依核定表單辦理。");
+  return L.join("\n");
+}
+async function copy(text,label){
+  const out=$("#copyout");
+  try{await navigator.clipboard.writeText(text);out.hidden=true;toast(label+"已複製");}
+  catch(e){out.hidden=false;out.value=text;out.focus();out.select();toast("請按 Ctrl+C 複製選取的文字");}
+}
+function pick(key,on){
+  if(on){const {it}=findItem(key);setPick(key,{owner:it.dim==="EC"?"總務處":it.dim==="SL"||it.dim==="TT"?"教務處":"數位核心小組",when:WHEN[2],evidence:EVID[it.dim],action:""},true);}
+  else setPick(key,null,true);
+}
+function autoPick(){
+  const {fs}=suggestions(); const picks=D().picks[UI.plan];
+  const open=fs.items.filter(i=>["part","no"].includes(st()[i.key])&&!gammaOptional(i));
+  const dimScore=d=>{const s=score(fs.items.filter(i=>i.dim===d)).score;return s===null?1:s;};
+  open.sort((a,b)=>((a.dim==="KR"?-1:dimScore(a.dim))-(b.dim==="KR"?-1:dimScore(b.dim)))||((st()[a.key]==="part"?0:1)-(st()[b.key]==="part"?0:1)));
+  let added=0; for(const it of open){if(Object.keys(picks).length>=5)break; if(!picks[it.key]){pick(it.key,true);added++;}}
+  render(); toast(added?`已加入 ${added} 項`:"沒有可再加入的項目");
+}
+
+/* ---------- 事件 ---------- */
+const app=$("#app");
+app.addEventListener("click",e=>{
+  const t=e.target.closest("button,input[type=checkbox]"); if(!t||t.disabled) return;
+  if(t.dataset.plan){UI.plan=t.dataset.plan;UI.dim="all";saveUI();render();return;}
+  if(t.dataset.sid){chooseSchool(t.dataset.sid);return;}
+  if(t.id==="createSchool"){createSchool($("#newSchool").value);return;}
+  if(t.id==="importLocal"){importInto(LOCAL);return;}
+  const seg=t.closest(".seg[data-group]"); if(seg&&t.dataset.val){if(!editable())return;setProfile({[seg.dataset.group]:t.dataset.val},true);render();return;}
+  if(t.dataset.g){if(!editable())return;setProfile({[t.dataset.g]:!D().profile[t.dataset.g]},true);render();return;}
+  if(t.dataset.stage!==undefined){UI.stage[UI.plan]=+t.dataset.stage;UI.dim="all";saveUI();render();window.scrollTo({top:0});return;}
+  if(t.dataset.dim){UI.dim=t.dataset.dim;saveUI();render();return;}
+  const item=t.closest(".item");
+  if(item&&t.dataset.v){
+    if(!editable()){toast("你目前只有檢視權限");return;}
+    const k=item.dataset.key, nv=st()[k]===t.dataset.v?null:t.dataset.v;
+    setStatus(k,nv); render(); return;}
+  if(item&&t.hasAttribute("data-note")){
+    if(!editable()) return;
+    const k=item.dataset.key, n=D().notes[UI.plan];
+    if(n[k]===undefined) n[k]=""; else if(!n[k]) setNote(k,undefined,true); else {toast("已有內容的註記會保留");return;}
+    render(); return;}
+  if(t.id==="naGamma"){const s=stages()[UI.stage[UI.plan]]; s.items.filter(gammaOptional).forEach(i=>setStatus(i.key,"na")); render(); toast("已標為不適用"); return;}
+  if(t.dataset.pick){pick(t.dataset.pick,t.checked);render();return;}
+  if(t.dataset.unpick){pick(t.dataset.unpick,false);render();return;}
+  if(t.id==="autoPick"){autoPick();return;}
+  if(t.id==="copyPlan"){copy(planText(),"方案文字");return;}
+  if(t.id==="copyBackup"){const d=D();copy(JSON.stringify({v:2,data:{profile:d.profile,status:d.status,notes:d.notes,picks:d.picks}}),"備份碼");return;}
+  if(t.id==="showRestore"){$("#restoreBox").hidden=!$("#restoreBox").hidden;return;}
+  if(t.id==="doRestore"){
+    let o; try{o=JSON.parse($("#restoreIn").value.trim());}catch(err){o=null;}
+    const src=o&&(o.v===2?o.data:o.v===1&&o.data?{profile:{name:o.data.name||"",school:o.data.school,role:o.data.role,g1:o.data.g1,g2:o.data.g2},status:o.data.status,notes:o.data.notes,picks:o.data.picks}:null);
+    if(!src||!src.status){toast("備份碼格式不正確，請確認是否完整貼上");return;}
+    if(shared()) importInto(src); else {LOCAL=Object.assign(blankData(),src);saveUI();render();toast("已還原備份");}
+    return;}
+  if(t.id==="resetAll"){$("#resetBox").hidden=false;return;}
+  if(t.id==="cancelReset"){$("#resetBox").hidden=true;return;}
+  if(t.id==="doReset"){LOCAL=blankData();saveUI();render();toast("已清除");return;}
+});
+app.addEventListener("keydown",e=>{if(e.target.id==="newSchool"&&e.key==="Enter"){e.preventDefault();createSchool(e.target.value);}});
+app.addEventListener("input",e=>{
+  const t=e.target; if(!editable()) return;
+  if(t.id==="schoolName"){setProfile({name:t.value});renderTop();return;}
+  if(t.closest(".item")&&t.tagName==="TEXTAREA"){setNote(t.closest(".item").dataset.key,t.value);return;}
+  const row=t.closest(".planrow");
+  if(row&&t.dataset.f){const k=row.dataset.row, cur=Object.assign({},D().picks[UI.plan][k],{[t.dataset.f]:t.value}); setPick(k,cur,t.tagName==="SELECT");}
+});
+
+/* 依 id 顯示成員名稱與頭像（名稱不存進資料庫） */
+async function fillNames(){
+  if(!user) return;
+  const els=[...app.querySelectorAll("[data-uid],[data-avatar]")]; if(!els.length) return;
+  const ids=[...new Set(els.map(el=>el.dataset.uid||el.dataset.avatar))];
+  const ps=await user.profiles(ids);
+  for(const el of els){
+    const p=ps[el.dataset.uid||el.dataset.avatar]; if(!p) continue;
+    if(el.dataset.uid) el.textContent=p.isMe?"你":(p.name||"成員"); else el.src=p.avatarUrl;
+  }
+}
+
+function render(){
+  renderTop();
+  app.classList.toggle("app-ro",!editable());
+  app.innerHTML=[viewSetup,viewRead,viewDiag,viewPlan][UI.step]();
+  fillNames();
+}
+boot();
+
+</script>
+</body>
+</html>
