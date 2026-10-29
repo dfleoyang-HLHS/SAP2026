@@ -34,6 +34,15 @@ service cloud.firestore {
         && request.resource.data.name.size() <= 80;
       allow delete: if false;
 
+      // 診斷快照：同網域成員可新增與讀取，存下後不能修改或刪除
+      match /snapshots/{snapId} {
+        allow read: if sameSchool(domain);
+        allow create: if sameSchool(domain)
+          && request.resource.data.keys().size() <= 10
+          && request.resource.data.plan in ['a1', 'a2']
+          && request.resource.data.picks.size() <= 50;
+      }
+
       // 各指標狀態、佐證註記、年度方案
       match /{kind}/{docId} {
         allow read: if sameSchool(domain);

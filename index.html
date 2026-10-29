@@ -194,6 +194,10 @@ table.heat th.st b{display:block;font-family:var(--f-display);color:var(--ink);f
 .people{display:flex;flex-wrap:wrap;gap:8px 14px;font-size:.88rem}
 .people span{display:inline-flex;gap:6px;align-items:center}
 .people img{width:22px;height:22px;border-radius:50%}
+table.snaps td{background:var(--surface);border:1px solid var(--line)}
+table.snaps th.st small{display:block}
+.snappicks{margin:6px 0 0;padding-left:1.1em;text-align:left;font-family:var(--f-body);font-size:.8rem;min-width:200px;display:grid;gap:4px}
+table.snaps summary{cursor:pointer;color:var(--accent);font-family:var(--f-body)}
 </style>
 
 <header class="top"><div class="wrap">
@@ -255,7 +259,7 @@ const EVID = {
    沒有資料庫時（單機模式）存在瀏覽器。 */
 const KEY = "dp-diag-v2";
 function blankData(){return {profile:{name:"",school:"前導學校",role:"未定",g1:false,g2:false},
-  status:{a1:{},a2:{}},notes:{a1:{},a2:{}},picks:{a1:{},a2:{}},meta:{a1:{},a2:{}}};}
+  status:{a1:{},a2:{}},notes:{a1:{},a2:{}},picks:{a1:{},a2:{}},meta:{a1:{},a2:{}},snapshots:[]};}
 let UI = {plan:"a1",step:0,stage:{a1:0,a2:0},dim:"all",sid:null};
 let LOCAL = blankData(), LIVE = blankData();
 let MODE = "connecting";            // connecting | db | local
@@ -368,7 +372,7 @@ function subscribeSchool(sid){
   schoolUnsubs.forEach(u=>u()); schoolUnsubs=[]; LIVE=blankData(); liveLoaded=false;
   if(!sid) return;
   let got=0;
-  const ready=()=>{if(++got===4){liveLoaded=true;} schedule();};
+  const ready=()=>{if(++got===5){liveLoaded=true;} schedule();};
   schoolUnsubs.push(db.doc("schools/"+sid).onSnapshot(s=>{
     if(!dirty.has("schools/"+sid)&&s.exists) LIVE.profile=Object.assign(blankData().profile,s.data());
     if(BACKEND==="firebase") wsMissing=!s.exists&&!s.metadata.fromCache;
@@ -392,6 +396,11 @@ function subscribeSchool(sid){
       if(first){first=false;ready();} else schedule();
     },dbError));
   }
+  let firstSnap=true;
+  schoolUnsubs.push(db.collection(`schools/${sid}/snapshots`).onSnapshot(qs=>{
+    LIVE.snapshots=qs.docs.map(d=>d.data());
+    if(firstSnap){firstSnap=false;ready();} else schedule();
+  },dbError));
 }
 function chooseSchool(sid){UI.sid=sid;saveUI();subscribeSchool(sid);render();}
 async function createSchool(name){
@@ -744,8 +753,54 @@ function viewDiag(){
     ${Object.keys(contrib).length?`<div><span class="label">參與這份盤點的成員</span><div class="people">${Object.entries(contrib).sort((a,b)=>b[1]-a[1]).map(([id,n])=>`<span><img data-avatar="${esc(id)}" alt=""><span data-uid="${esc(id)}">成員</span><span class="muted mono">${n}</span></span>`).join("")}</div></div>`:""}
     </div>
   </div>
+  ${snapPanel()}
   <div class="btnrow"><button class="btn quiet" data-step="1">← 回到盤點</button><button class="btn" data-step="3">產生年度改善方案 →</button></div>
   </section>`;
+}
+
+/* ---------- 診斷快照 ----------
+   把當下的診斷結果與年度改善方案連同日期存成一筆固定紀錄（存下後不再修改），
+   供日後比較進步情形。共用模式存在 schools/<工作區>/snapshots，單機模式存在瀏覽器。 */
+function makeSnapshot(label){
+  const list=stages(), f=focusStage(), d=D(), p=d.profile, picks=d.picks[UI.plan];
+  return {plan:UI.plan,label:label||"",at:Date.now(),by:myId||"",
+    profile:{name:p.name||"",school:p.school||"",role:p.role||"",g1:!!p.g1,g2:!!p.g2},
+    focus:f.i,
+    stages:list.map(s=>{const v=verdict(s);return {verdict:v.k,score:v.all.score,kr:v.kr.score,rated:v.all.rated,total:v.all.total,tbd:v.all.tbd,
+      dims:Object.fromEntries(DIMS.map(x=>[x,score(s.items.filter(it=>it.dim===x)).score]))};}),
+    picks:Object.keys(picks).filter(findItem).map(k=>{const {it}=findItem(k),q=picks[k];
+      return {code:it.code,title:it.title,owner:q.owner||"",when:q.when||"",evidence:q.evidence||"",action:q.action||""};})};
+}
+let savingSnap=false;
+async function saveSnapshot(){
+  if(!editable()||savingSnap) return;
+  const label=($("#snapLabel")&&$("#snapLabel").value.trim())||"";
+  const snap=makeSnapshot(label);
+  if(!shared()){LOCAL.snapshots=[snap,...(LOCAL.snapshots||[])];saveUI();render();toast("已儲存診斷快照");return;}
+  savingSnap=true;
+  try{ await db.collection(base()+"/snapshots").doc().set(snap); toast("已儲存診斷快照"); }
+  catch(e){ const c=e&&e.code; toast(c==="permission-denied"||c==="invalid_argument"?"你沒有儲存快照的權限":c==="quota_exceeded"?"資料庫已滿，無法儲存快照":"儲存失敗，請稍後再試"); }
+  finally{ savingSnap=false; }
+}
+function snapPanel(){
+  const snaps=(D().snapshots||[]).filter(s=>s.plan===UI.plan).sort((a,b)=>b.at-a.at);
+  const now=stages().map(s=>verdict(s).all.score);
+  const delta=(a,b)=>{if(a===null||b===null||a===undefined||b===undefined) return "";const n=Math.round((a-b)*100);
+    return n?`<small style="color:var(--${n>0?"done":"no"})">${n>0?"↑":"↓"}${Math.abs(n)}</small>`:`<small class="muted">±0</small>`;};
+  return `<div class="panel"><h2>診斷快照</h2>
+    <p class="small muted">把目前的診斷結果與年度改善方案連同日期存起來，例如學期初與學期末各存一次，之後可以比較進步情形。快照存下後不能修改。</p>
+    ${editable()?`<div class="newschool"><input type="text" id="snapLabel" placeholder="快照名稱，例如：115 學年上學期期初" maxlength="40"><button class="btn" id="saveSnap">儲存診斷快照</button></div>`:""}
+    ${snaps.length?`<div class="tablebox"><table class="heat snaps"><thead><tr><th>日期</th><th>名稱</th>${STAGE[UI.plan].map(x=>`<th>${x.t}</th>`).join("")}<th>當時聚焦</th><th>優先工作</th></tr></thead><tbody>
+      <tr><th class="st"><b>目前</b></th><th class="small muted">即時計算</th>${now.map(x=>`<td>${pct(x)}</td>`).join("")}<td>${STAGE[UI.plan][focusStage().i].t}</td><td>${Object.keys(D().picks[UI.plan]).filter(findItem).length} 項</td></tr>
+      ${snaps.map(s=>`<tr><th class="st"><b class="mono">${new Date(s.at).toLocaleDateString("zh-TW")}</b><small class="muted">${s.by?`<span data-uid="${esc(s.by)}">成員</span>`:""}</small></th>
+        <th class="small">${esc(s.label||"（未命名）")}</th>
+        ${(s.stages||[]).map((x,i)=>{const dl=delta(now[i],x.score);return `<td>${pct(x.score)}${dl?`<small>目前 ${dl}</small>`:""}</td>`;}).join("")}
+        <td>${STAGE[UI.plan][s.focus]?STAGE[UI.plan][s.focus].t:"—"}</td>
+        <td><details><summary>${(s.picks||[]).length} 項</summary><ul class="snappicks">${(s.picks||[]).map(q=>`<li><span class="mono">${esc(q.code)}</span> ${esc(q.title)}<br><span class="muted">${esc(q.owner)}｜${esc(q.when)}</span></li>`).join("")||"<li class='muted'>（未選）</li>"}</ul></details></td></tr>`).join("")}
+      </tbody></table></div>
+      <p class="small muted">表中為各階段的整體落實比例；「目前 ↑／↓」是現在比當時多或少的百分點。</p>`
+    :`<div class="empty">還沒有快照。${editable()?"輸入名稱後按「儲存診斷快照」建立第一筆。":""}</div>`}
+  </div>`;
 }
 
 /* ---------- 步驟 4：方案 ---------- */
@@ -939,6 +994,7 @@ app.addEventListener("click",e=>{
   if(t.dataset.unpick){pick(t.dataset.unpick,false);render();return;}
   if(t.id==="autoPick"){autoPick();return;}
   if(t.id==="downloadPdf"){downloadPdf(t);return;}
+  if(t.id==="saveSnap"){saveSnapshot();return;}
   if(t.id==="copyPlan"){copy(planText(),"方案文字（可貼到 Google 文件）");return;}
   if(t.id==="copyBackup"){const d=D();copy(JSON.stringify({v:2,data:{profile:d.profile,status:d.status,notes:d.notes,picks:d.picks}}),"備份碼");return;}
   if(t.id==="showRestore"){$("#restoreBox").hidden=!$("#restoreBox").hidden;return;}
