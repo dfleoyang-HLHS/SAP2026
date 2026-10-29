@@ -18,6 +18,13 @@ service cloud.firestore {
     function sameSchool(domain) {
       return schoolAccount() && userDomain() == domain;
     }
+    // 管理者：可讀取所有學校的資料（管理者彙整頁 admin.html 使用），不能修改。
+    // 名單需與 config.js 的 admins 一致。
+    function isAdmin() {
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email.lower() in ['dfleoyang@hlhs.hlc.edu.tw'];
+    }
 
     // 學校工作區：同網域成員可建立與修改，網域不可改，不可刪除
     match /schools/{domain} {
@@ -53,9 +60,10 @@ service cloud.firestore {
       }
     }
 
-    // 其他位置一律拒絕
+    // 管理者可讀取全部；其他位置一律拒絕
     match /{document=**} {
-      allow read, write: if false;
+      allow read: if isAdmin();
+      allow write: if false;
     }
   }
 }
