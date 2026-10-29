@@ -23,7 +23,7 @@ service cloud.firestore {
     function isAdmin() {
       return request.auth != null
         && request.auth.token.email_verified == true
-        && request.auth.token.email.lower() in ['dfleoyang@hlhs.hlc.edu.tw'];
+        && request.auth.token.email.lower() in ['dfleoyang@hlhs.hlc.edu.tw', 'ponponmai@hlhs.hlc.edu.tw'];
     }
 
     // 學校工作區：同網域成員可建立與修改，網域不可改，不可刪除
