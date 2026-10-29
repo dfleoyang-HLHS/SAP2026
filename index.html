@@ -204,7 +204,7 @@ table.snaps summary{cursor:pointer;color:var(--accent);font-family:var(--f-body)
 </style>
 
 <header class="top"><div class="wrap">
-  <div class="brand"><b>數位前導指南診斷</b><span id="brandsub">混成學習 α-1・跨校遠距共授 α-2｜實施指南 2.0 討論版</span></div>
+  <div class="brand"><b>數位前導指南診斷</b><span id="brandsub">高中優質及數位前導計畫｜實施指南 2.0 討論版</span></div>
   <span class="sync" id="sync"><i></i><span>連線中</span></span>
   <nav class="steps" id="steps" aria-label="步驟"></nav>
 </div></header>
@@ -538,8 +538,7 @@ function renderTop(){
   const isAdmin=BACKEND==="firebase"&&fbUser&&admins.includes(String(fbUser.email||"").toLowerCase());
   $("#steps").innerHTML=STEPS.map((s,i)=>`<button data-step="${i}" ${UI.step===i?'aria-current="step"':""}><span class="n">${i+1}</span>${s}</button>`).join("")
     +(isAdmin?`<a class="navadmin" href="admin.html">管理者專區</a>`:"");
-  const name=D().profile.name;
-  $("#brandsub").textContent=`${PLAN[UI.plan].name}${name?"｜"+name:""}｜實施指南 2.0 討論版`;
+  $("#brandsub").textContent=`${PLAN[UI.plan].name}｜高中優質及數位前導計畫｜實施指南 2.0 討論版`;
   const sy=$("#sync");
   const [cls,txt]=MODE==="connecting"?["","連線中"]:MODE==="local"?["local","單機模式"]:MODE==="needlogin"?["ro","尚未登入"]
     :!UI.sid?["on","共用紀錄・未選學校"]:!canWrite?["ro","共用紀錄・唯讀"]:["on","共用紀錄・即時同步"];
