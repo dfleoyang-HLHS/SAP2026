@@ -888,7 +888,7 @@ function reportHTML(){
       <div style="font-size:12px;color:#596677">學校類型：${esc(p.school)}${UI.plan==="a2"?`｜角色：${esc(p.role)}｜選辦：${[p.g1&&"γ-1",p.g2&&"γ-2"].filter(Boolean).join("、")||"未填"}`:""}｜產出日期：${today}</div>
     </div>
     <div style="font-weight:700;font-size:15px;margin:4px 0 6px">一、各階段診斷</div>
-    <table style="border-collapse:collapse;width:100%;font-size:11px;table-layout:fixed"><col style="width:150px"><col style="width:58px">
+    <table style="border-collapse:collapse;width:100%;font-size:11px;table-layout:fixed"><col style="width:140px"><col style="width:76px">
       <tr style="background:#e9edf2"><th style="${cell};text-align:left">階段</th><th style="${cell}">判讀</th>${DIMS.map(x=>`<th style="${cell}">${x}<br>${DIM[x].short}</th>`).join("")}<th style="${cell}">整體</th><th style="${cell}">已盤點</th></tr>
       ${list.map((s,i)=>{const v=verdict(s);return `<tr${i===f.i?' style="background:#e3ebf6"':""}><td style="${cell};text-align:left">${STAGE[UI.plan][i].t}・${STAGE[UI.plan][i].pos}</td><td style="${cell}">${v.l}</td>
         ${DIMS.map(x=>{const its=s.items.filter(it=>it.dim===x);return `<td style="${cell}">${its.length?pct(score(its).score):"—"}</td>`;}).join("")}
@@ -916,7 +916,8 @@ async function downloadPdf(btn){
     box.innerHTML=reportHTML(); document.body.appendChild(box);
     const name=`${D().profile.name||"本校"}_${PLAN[UI.plan].name}_診斷與改善方案.pdf`.replace(/[\/:*?"<>|]/g,"");
     const worker=html2pdf().set({margin:[12,12,14,12],filename:name,image:{type:"jpeg",quality:.95},
-      html2canvas:{scale:2,backgroundColor:"#ffffff"},jsPDF:{unit:"mm",format:"a4",orientation:"portrait"},
+      // scrollX/Y 歸零：頁面捲動到下方時按鈕，html2canvas 會依捲動位置取景而產生空白頁
+      html2canvas:{scale:2,backgroundColor:"#ffffff",scrollX:0,scrollY:0},jsPDF:{unit:"mm",format:"a4",orientation:"portrait"},
       pagebreak:{mode:["css","legacy"],avoid:[".r-pick","tr"]}}).from(box.firstElementChild);
     const c=window.claude;
     if(c&&typeof c.use==="function"){
