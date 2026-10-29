@@ -28,8 +28,9 @@
    - 誰可以存取：**所有人**（網頁由 GitHub Pages 呼叫，需要這個設定；資料由存取碼保護）。選「只限本網域使用者」會被導向登入頁，網頁會顯示「目前無法連線到 Google 試算表」；選單裡沒有「所有人」時，代表學校 Workspace 管理員關閉了此選項。
    按「部署」，第一次會要求授權，依畫面允許即可。完成後複製「網頁應用程式網址」（`https://script.google.com/macros/s/…/exec`）。
 5. **填入網址**：在 GitHub 編輯本 repo 的 [`config.js`](config.js)，把網址貼進 `sheetApi: ""` 的引號中並 commit。一兩分鐘後網站就會改為試算表模式。
-6. **確認部署**：用瀏覽器直接開啟該網址，看到 `{"ok":true,"service":"數位前導指南診斷"}` 即表示可以連線。
-7. **通知成員**：把網址和存取碼告訴校內成員。第一次開啟時輸入存取碼和自己的名字即可。
+   https://script.google.com/macros/s/AKfycbw6ENDmkWqZ4D4LfVoSn5aB-IUKbUe-2RehxhUmhhgrl80QQjShMqpxit1liI4nweUX/exec
+7. **確認部署**：用瀏覽器直接開啟該網址，看到 `{"ok":true,"service":"數位前導指南診斷"}` 即表示可以連線。
+8. **通知成員**：把網址和存取碼告訴校內成員。第一次開啟時輸入存取碼和自己的名字即可。
 
 之後修改 `Code.gs` 時，要在「部署 → 管理部署作業」編輯原部署並選「新版本」，網址才會維持不變。
 
