@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <style>:root{color-scheme:light}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<script src="config.js"></script>
 </head>
 <body>
 <title>數位前導指南診斷</title>
@@ -269,7 +270,7 @@ function saveUI(){try{localStorage.setItem(KEY,JSON.stringify({ui:UI,local:LOCAL
 
 const D = ()=>MODE==="db"?LIVE:LOCAL;
 const shared = ()=>MODE==="db";
-const needSchool = ()=>shared()&&!UI.sid;
+const needSchool = ()=>(shared()&&!UI.sid)||MODE==="needcode";
 const editable = ()=>MODE==="local"||(MODE==="db"&&!!UI.sid&&canWrite);
 const st = ()=>D().status[UI.plan];
 const stages = ()=>DATA[UI.plan];
@@ -299,6 +300,7 @@ async function run(path){
     if(c==="invalid_argument"){canWrite=false;toast("你目前沒有寫入權限，已改為唯讀");render();}
     else if(c==="quota_exceeded") toast("資料庫已滿，無法再新增紀錄："+(e.message||""));
     else if(c==="revoked") toast("存取權限已變更，請重新整理頁面");
+    else if(c==="bad_code"){toast("存取碼已失效，請重新輸入");MODE="needcode";codeError="存取碼已變更，請重新輸入。";render();}
     else toast("儲存失敗，請稍後再試一次");
   }
   inflight.delete(path); active--;
@@ -407,16 +409,60 @@ async function importInto(src){   // 把一份紀錄（本機舊資料或備份�
   render(); toast(`已匯入 ${n} 筆盤點紀錄`);
 }
 
+/* ---------- Google 試算表後端（GitHub Pages 版）----------
+   以 Apps Script 網頁應用程式當後端，模擬上面用到的 db 介面：
+   doc/collection、set/delete、onSnapshot。每 15 秒拉一次別人的修改。 */
+const SHEET_API = (window.SAP_CONFIG&&window.SAP_CONFIG.sheetApi)||"";
+let codeError = "";
+function makeSheetDb(api,getCode){
+  const cache=new Map(), listeners=new Set();
+  let since=0, loaded=false, timer=null, ops=[], flushTimer=null;
+  const post=body=>fetch(api,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({code:getCode(),...body})}).then(r=>r.json());
+  const emit=()=>listeners.forEach(f=>f());
+  async function pull(){
+    let r; try{ r=await post({action:"pull",since}); }catch(e){ return "offline"; }
+    if(!r.ok) return r.error||"error";
+    for(const d of r.docs){ if(d.data===null) cache.delete(d.path); else cache.set(d.path,d.data); }
+    since=Math.max(0,r.now-5000);  // 往回重疊 5 秒，避免漏掉同時寫入的紀錄
+    if(r.docs.length||!loaded){loaded=true;emit();}
+    return "ok";
+  }
+  async function flush(){
+    flushTimer=null; const batch=ops; ops=[]; if(!batch.length) return;
+    let r, err=null;
+    try{ r=await post({action:"write",ops:batch.map(o=>({path:o.path,data:o.data,by:myId||""}))}); if(!r.ok) err={code:r.error==="bad_code"?"bad_code":"invalid_argument",message:r.error}; }
+    catch(e){ err={code:"unavailable",message:"無法連線到試算表"}; }
+    batch.forEach(o=>err?o.reject(err):o.resolve());
+    if(!err) pull();
+  }
+  function write(path,data){
+    if(data===null) cache.delete(path); else cache.set(path,JSON.parse(JSON.stringify(data)));
+    emit();
+    return new Promise((resolve,reject)=>{ops.push({path,data,resolve,reject}); if(!flushTimer) flushTimer=setTimeout(flush,600);});
+  }
+  const snap=path=>{const v=cache.get(path);return {id:path.split("/").pop(),exists:v!==undefined,data:()=>v,metadata:{fromCache:!loaded,hasPendingWrites:false}};};
+  const listen=f=>{listeners.add(f); if(loaded) setTimeout(f,0); return ()=>listeners.delete(f);};
+  const doc=path=>({id:path.split("/").pop(),path,set:d=>write(path,d),delete:()=>write(path,null),
+    onSnapshot:next=>listen(()=>next(snap(path)))});
+  const collection=path=>({path,
+    doc:id=>doc(path+"/"+(id||("s"+Date.now().toString(36)+Math.random().toString(36).slice(2,7)))),
+    onSnapshot:next=>listen(()=>{const depth=path.split("/").length+1;
+      const docs=[...cache.keys()].filter(k=>k.startsWith(path+"/")&&k.split("/").length===depth).map(snap);
+      next({docs,size:docs.length,empty:!docs.length,metadata:{fromCache:!loaded,hasPendingWrites:false}});})});
+  return {doc,collection,pull,start(){ if(!timer) timer=setInterval(()=>{if(!document.hidden) pull();},15000); }};
+}
+async function connectSheet(){
+  MODE="connecting"; codeError=""; render();
+  db=makeSheetDb(SHEET_API,()=>UI.code||"");
+  const r=await db.pull();
+  if(r!=="ok"){MODE="needcode";codeError=r==="bad_code"?"存取碼不正確，請向學校的管理者確認。":"目前無法連線到 Google 試算表，請稍後再試。";render();return;}
+  db.start(); myId=UI.me||""; canWrite=true; BACKEND="sheet";
+  startShared();
+}
+
 /* ---------- 啟動 ---------- */
-async function boot(){
-  render();
-  const c=window.claude;
-  if(!c||typeof c.use!=="function"){MODE="local";render();return;}
-  const [d,u]=await Promise.all([c.use("db"),c.use("user")]);
-  user=u;
-  if(!d){MODE="local";render();return;}
-  db=d; myId=user?await user.id():null;
-  const cw=user?await user.can("data.write"):null; canWrite=cw!==false;
+let BACKEND = "";                   // claude | sheet
+function startShared(){
   MODE="db";
   db.collection("schools").onSnapshot(qs=>{
     schools=qs.docs.map(x=>({id:x.id,...x.data()})).sort((a,b)=>String(a.name).localeCompare(String(b.name),"zh-Hant"));
@@ -424,6 +470,21 @@ async function boot(){
   },dbError);
   if(UI.sid) subscribeSchool(UI.sid);
   render();
+}
+async function boot(){
+  render();
+  const c=window.claude;
+  if(!c||typeof c.use!=="function"){
+    if(!SHEET_API){MODE="local";render();return;}
+    if(!UI.code){MODE="needcode";render();return;}
+    connectSheet(); return;
+  }
+  const [d,u]=await Promise.all([c.use("db"),c.use("user")]);
+  user=u;
+  if(!d){MODE="local";render();return;}
+  db=d; myId=user?await user.id():null; BACKEND="claude";
+  const cw=user?await user.can("data.write"):null; canWrite=cw!==false;
+  startShared();
 }
 
 function gammaOptional(it){
@@ -465,8 +526,9 @@ function renderTop(){
   const name=D().profile.name;
   $("#brandsub").textContent=`${PLAN[UI.plan].name}${name?"｜"+name:""}｜實施指南 2.0 討論版`;
   const sy=$("#sync");
-  const [cls,txt]=MODE==="connecting"?["","連線中"]:MODE==="local"?["local","單機模式"]
-    :!UI.sid?["on","共用紀錄・未選學校"]:!canWrite?["ro","共用紀錄・唯讀"]:["on","共用紀錄・即時同步"];
+  const where=BACKEND==="sheet"?"Google 試算表":"共用紀錄";
+  const [cls,txt]=MODE==="connecting"?["","連線中"]:MODE==="local"?["local","單機模式"]:MODE==="needcode"?["ro","需要存取碼"]
+    :!UI.sid?["on",where+"・未選學校"]:!canWrite?["ro",where+"・唯讀"]:["on",where+(BACKEND==="sheet"?"・自動同步":"・即時同步")];
   sy.className="sync "+cls; sy.lastElementChild.textContent=txt;
 }
 document.addEventListener("click",e=>{const b=e.target.closest("[data-step]"); if(b) go(+b.dataset.step);});
@@ -484,8 +546,14 @@ function needSchoolView(){
 /* ---------- 步驟 1：選擇方案 ---------- */
 function schoolPanel(){
   if(MODE==="connecting") return `<div class="panel"><span class="label">一、學校工作區</span><p class="muted">正在連線共用紀錄……</p></div>`;
+  if(MODE==="needcode") return `<div class="panel"><span class="label">一、連線到學校的 Google 試算表</span>
+    <p class="small muted">盤點紀錄存在學校的 Google 試算表，全校成員共用。請輸入管理者提供的存取碼，以及你的名字（會顯示在你標記的項目上）。</p>
+    <div class="grid2"><div class="field"><label for="accessCode">存取碼</label><input type="text" id="accessCode" value="${esc(UI.code||"")}" autocomplete="off"></div>
+    <div class="field"><label for="myName">你的名字</label><input type="text" id="myName" value="${esc(UI.me||"")}" placeholder="例如：教學組 王老師" maxlength="40"></div></div>
+    ${codeError?`<p class="small" style="color:var(--mark)">${esc(codeError)}</p>`:""}
+    <div class="btnrow"><button class="btn" id="connectSheet">連線</button></div></div>`;
   if(MODE==="local") return `<div class="panel"><span class="label">一、學校資料（單機模式）</span>
-    <p class="small muted">目前無法連上共用紀錄（例如在 claude.ai 以外開啟、或尚未登入），盤點只會存在這台電腦的瀏覽器。登入 claude.ai 後開啟此頁即可與同校成員共用。</p>
+    <p class="small muted">目前沒有連上共用紀錄，盤點只會存在這台電腦的瀏覽器。在 claude.ai 開啟此頁，或由管理者接上 Google 試算表後，即可與同校成員共用。</p>
     <div class="field"><label for="schoolName">學校名稱</label><input type="text" id="schoolName" value="${esc(D().profile.name)}" placeholder="例如：○○高級中學"></div></div>`;
   const cur=schools.find(s=>s.id===UI.sid);
   const hasLocal=Object.values(LOCAL.status).some(o=>Object.keys(o).length);
@@ -494,6 +562,7 @@ function schoolPanel(){
       :`<p class="muted small">還沒有任何學校工作區。第一位成員建立後，其他成員打開此頁點選即可加入。</p>`}
     ${canWrite?`<div class="newschool"><input type="text" id="newSchool" placeholder="新學校名稱，例如：○○高級中學"><button class="btn ghost" id="createSchool">建立工作區</button></div>`:""}
     ${cur?`<div class="field"><label for="schoolName">工作區名稱</label><input type="text" id="schoolName" value="${esc(D().profile.name)}" ${editable()?"":"disabled"}></div>`:""}
+    ${BACKEND==="sheet"?`<div class="field"><label for="myName">你的名字（顯示在你標記的項目上）</label><input type="text" id="myName" value="${esc(UI.me||"")}" placeholder="例如：教學組 王老師" maxlength="40"></div>`:""}
     ${cur&&hasLocal&&canWrite?`<div class="banner"><span>這台電腦上有先前單機版的盤點紀錄。</span><button class="btn quiet" id="importLocal">匯入到「${esc(D().profile.name)}」</button></div>`:""}
   </div>`;
 }
@@ -771,6 +840,11 @@ app.addEventListener("click",e=>{
   if(t.dataset.sid){chooseSchool(t.dataset.sid);return;}
   if(t.id==="createSchool"){createSchool($("#newSchool").value);return;}
   if(t.id==="importLocal"){importInto(LOCAL);return;}
+  if(t.id==="connectSheet"){
+    UI.code=$("#accessCode").value.trim(); UI.me=$("#myName").value.trim(); saveUI();
+    if(!UI.code){codeError="請輸入存取碼。";render();return;}
+    if(!UI.me){codeError="請輸入你的名字，方便同事知道是誰標記的。";render();return;}
+    connectSheet(); return;}
   const seg=t.closest(".seg[data-group]"); if(seg&&t.dataset.val){if(!editable())return;setProfile({[seg.dataset.group]:t.dataset.val},true);render();return;}
   if(t.dataset.g){if(!editable())return;setProfile({[t.dataset.g]:!D().profile[t.dataset.g]},true);render();return;}
   if(t.dataset.stage!==undefined){UI.stage[UI.plan]=+t.dataset.stage;UI.dim="all";saveUI();render();window.scrollTo({top:0});return;}
@@ -804,17 +878,23 @@ app.addEventListener("click",e=>{
 });
 app.addEventListener("keydown",e=>{if(e.target.id==="newSchool"&&e.key==="Enter"){e.preventDefault();createSchool(e.target.value);}});
 app.addEventListener("input",e=>{
-  const t=e.target; if(!editable()) return;
+  const t=e.target;
+  if(t.id==="myName"&&MODE==="db"){UI.me=t.value.trim();myId=UI.me;saveUI();return;}
+  if(!editable()) return;
   if(t.id==="schoolName"){setProfile({name:t.value});renderTop();return;}
   if(t.closest(".item")&&t.tagName==="TEXTAREA"){setNote(t.closest(".item").dataset.key,t.value);return;}
   const row=t.closest(".planrow");
   if(row&&t.dataset.f){const k=row.dataset.row, cur=Object.assign({},D().picks[UI.plan][k],{[t.dataset.f]:t.value}); setPick(k,cur,t.tagName==="SELECT");}
 });
 
-/* 依 id 顯示成員名稱與頭像（名稱不存進資料庫） */
+/* 依 id 顯示成員名稱與頭像（claude.ai 版名稱不存進資料庫；試算表版存的就是成員自填的名字） */
 async function fillNames(){
-  if(!user) return;
   const els=[...app.querySelectorAll("[data-uid],[data-avatar]")]; if(!els.length) return;
+  if(BACKEND==="sheet"){
+    for(const el of els){ if(el.dataset.avatar) el.remove(); else el.textContent=el.dataset.uid===myId?"你":el.dataset.uid; }
+    return;
+  }
+  if(!user) return;
   const ids=[...new Set(els.map(el=>el.dataset.uid||el.dataset.avatar))];
   const ps=await user.profiles(ids);
   for(const el of els){
