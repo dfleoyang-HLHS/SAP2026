@@ -5,13 +5,11 @@ window.SAP_CONFIG = {
   // 只允許這個網域的 Google 帳號登入（需與 firestore.rules 的網域一致）
   allowedDomain: "hlhs.hlc.edu.tw",
   firebase: {
-    const firebaseConfig = {
   apiKey: "AIzaSyCKAJnUSfVMFy5r_iKXUUx-jqFZrGG68RI",
   authDomain: "sap2026-diag.firebaseapp.com",
   projectId: "sap2026-diag",
   storageBucket: "sap2026-diag.firebasestorage.app",
   messagingSenderId: "722665502583",
   appId: "1:722665502583:web:f6f2fb2ae96b91f94a9372"
-};
   }
 };
