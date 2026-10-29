@@ -273,7 +273,7 @@ function saveUI(){try{localStorage.setItem(KEY,JSON.stringify({ui:UI,local:LOCAL
 
 const D = ()=>MODE==="db"?LIVE:LOCAL;
 const shared = ()=>MODE==="db";
-const needSchool = ()=>(shared()&&!UI.sid)||MODE==="needlogin";
+const needSchool = ()=>(shared()&&(!UI.sid||wsMissing))||MODE==="needlogin";
 const editable = ()=>MODE==="local"||(MODE==="db"&&!!UI.sid&&canWrite);
 const st = ()=>D().status[UI.plan];
 const stages = ()=>DATA[UI.plan];
@@ -371,7 +371,8 @@ function subscribeSchool(sid){
   const ready=()=>{if(++got===4){liveLoaded=true;} schedule();};
   schoolUnsubs.push(db.doc("schools/"+sid).onSnapshot(s=>{
     if(!dirty.has("schools/"+sid)&&s.exists) LIVE.profile=Object.assign(blankData().profile,s.data());
-    if(!s.exists&&!s.metadata.fromCache){UI.sid=null;saveUI();toast("這個學校工作區已不存在");}
+    if(BACKEND==="firebase") wsMissing=!s.exists&&!s.metadata.fromCache;
+    else if(!s.exists&&!s.metadata.fromCache){UI.sid=null;saveUI();toast("這個學校工作區已不存在");}
     ready();
   },dbError));
   for(const c of ["status","notes","picks"]){
@@ -395,10 +396,11 @@ function subscribeSchool(sid){
 function chooseSchool(sid){UI.sid=sid;saveUI();subscribeSchool(sid);render();}
 async function createSchool(name){
   name=name.trim(); if(!name){toast("請先輸入學校名稱");return;}
-  if(schools.some(s=>s.name===name)){toast("已有同名的工作區，請直接點選它");return;}
-  const ref=db.collection("schools").doc();
+  if(BACKEND!=="firebase"&&schools.some(s=>s.name===name)){toast("已有同名的工作區，請直接點選它");return;}
+  const ref=BACKEND==="firebase"?db.collection("schools").doc(UI.sid):db.collection("schools").doc();
   try{
-    await ref.set({...blankData().profile,name,createdBy:myId,createdAt:Date.now(),updatedAt:Date.now()});
+    if(BACKEND==="firebase"&&(await ref.get()).exists){toast("本校工作區已經有人建立，已為你開啟");return;}
+    await ref.set({...blankData().profile,name,...(BACKEND==="firebase"?{domain:UI.sid}:{}),createdBy:myId,createdAt:Date.now(),updatedAt:Date.now()});
     chooseSchool(ref.id); toast("已建立「"+name+"」工作區");
   }catch(e){ if(e&&(e.code==="invalid_argument"||e.code==="permission-denied")){canWrite=false;toast("你目前沒有寫入權限，無法建立工作區");render();} else toast("建立失敗，請稍後再試一次"); }
 }
@@ -420,8 +422,10 @@ async function importInto(src){   // 把一份紀錄（本機舊資料或備份�
    Firestore compat 版的 doc/collection/set/delete/onSnapshot 與上面用到的介面相同；
    只有指定網域的帳號能讀寫，由 firestore.rules 在伺服器端把關。 */
 const FB = (window.SAP_CONFIG&&window.SAP_CONFIG.firebase)||null;
-const FB_DOMAIN = ((window.SAP_CONFIG&&window.SAP_CONFIG.allowedDomain)||"").toLowerCase();
-let loginError = "", fbUser = null;
+const FB_SUFFIX = ((window.SAP_CONFIG&&window.SAP_CONFIG.allowedSuffix)||"edu.tw").toLowerCase();
+let loginError = "", fbUser = null, wsMissing = false;
+const domainOf = email=>(String(email).toLowerCase().split("@")[1]||"");
+const schoolDomain = d=>!!d&&d!=="gmail.com"&&(d===FB_SUFFIX||d.endsWith("."+FB_SUFFIX));
 const fbReady = ()=>!!(FB&&FB.apiKey&&window.firebase);
 function bootFirebase(){
   MODE="connecting"; render();
@@ -429,19 +433,21 @@ function bootFirebase(){
   firebase.firestore().settings({ignoreUndefinedProperties:true});
   firebase.auth().onAuthStateChanged(u=>{
     if(!u){fbUser=null;MODE="needlogin";render();return;}
-    const email=(u.email||"").toLowerCase();
-    if(FB_DOMAIN&&!email.endsWith("@"+FB_DOMAIN)){
-      loginError=`請改用 @${FB_DOMAIN} 的學校帳號登入（剛才登入的是 ${email}）。`;
+    const email=(u.email||"").toLowerCase(), domain=domainOf(email);
+    if(!schoolDomain(domain)){
+      loginError=`請改用學校的 Google 帳號（網域結尾為 ${FB_SUFFIX}）登入，剛才登入的是 ${email}。`;
       firebase.auth().signOut(); return;
     }
+    // 同一個網域的成員共用同一個工作區：工作區 id 就是網域
     fbUser=u; loginError=""; db=firebase.firestore(); myId=u.displayName||email; canWrite=true; BACKEND="firebase";
+    UI.sid=domain; saveUI();
     startShared();
   });
 }
 async function login(){
   loginError="";
   const p=new firebase.auth.GoogleAuthProvider();
-  p.setCustomParameters(FB_DOMAIN?{hd:FB_DOMAIN,prompt:"select_account"}:{prompt:"select_account"});
+  p.setCustomParameters({prompt:"select_account"});
   try{ await firebase.auth().signInWithPopup(p); }
   catch(e){
     const c=e&&e.code;
@@ -457,6 +463,7 @@ function logout(){ firebase.auth().signOut().then(()=>location.reload()); }
 let BACKEND = "";                   // claude | firebase
 function startShared(){
   MODE="db";
+  if(BACKEND==="firebase"){subscribeSchool(UI.sid);render();return;}
   db.collection("schools").onSnapshot(qs=>{
     schools=qs.docs.map(x=>({id:x.id,...x.data()})).sort((a,b)=>String(a.name).localeCompare(String(b.name),"zh-Hant"));
     schedule();
@@ -531,19 +538,20 @@ function banners(){
   return h;
 }
 function needSchoolView(){
-  return `<section class="view">${banners()}<div class="empty" style="display:grid;gap:12px;justify-items:center"><p>請先在步驟一選擇或建立你們學校的工作區，全校成員才會看到同一份盤點紀錄。</p><button class="btn" data-step="0">前往選擇學校</button></div></section>`;
+  return `<section class="view">${banners()}<div class="empty" style="display:grid;gap:12px;justify-items:center"><p>${MODE==="needlogin"?"請先在步驟一用學校的 Google 帳號登入。":"請先在步驟一選擇或建立你們學校的工作區，全校成員才會看到同一份盤點紀錄。"}</p><button class="btn" data-step="0">前往選擇學校</button></div></section>`;
 }
 
 /* ---------- 步驟 1：選擇方案 ---------- */
 function schoolPanel(){
   if(MODE==="connecting") return `<div class="panel"><span class="label">一、學校工作區</span><p class="muted">正在連線共用紀錄……</p></div>`;
   if(MODE==="needlogin") return `<div class="panel"><span class="label">一、登入</span>
-    <p class="small muted">盤點紀錄存在學校的雲端資料庫，全校成員共用。請用${FB_DOMAIN?` @${esc(FB_DOMAIN)} 的`:""}學校 Google 帳號登入，登入後標記的項目會顯示你的名字。</p>
+    <p class="small muted">盤點紀錄存在雲端資料庫。請用學校的 Google 帳號登入：同一個網域（例如 @hlhs.hlc.edu.tw）的成員會自動進入同一個學校工作區，標記的項目會顯示你的名字。</p>
     ${loginError?`<p class="small" style="color:var(--mark)">${esc(loginError)}</p>`:""}
     <div class="btnrow"><button class="btn" id="fbLogin">用學校 Google 帳號登入</button></div></div>`;
   if(MODE==="local") return `<div class="panel"><span class="label">一、學校資料（單機模式）</span>
     <p class="small muted">目前沒有連上共用紀錄，盤點只會存在這台電腦的瀏覽器。在 claude.ai 開啟此頁，或由管理者接上 Firebase 資料庫後，即可與同校成員共用。</p>
     <div class="field"><label for="schoolName">學校名稱</label><input type="text" id="schoolName" value="${esc(D().profile.name)}" placeholder="例如：○○高級中學"></div></div>`;
+  if(BACKEND==="firebase") return fbSchoolPanel();
   const cur=schools.find(s=>s.id===UI.sid);
   const hasLocal=Object.values(LOCAL.status).some(o=>Object.keys(o).length);
   return `<div class="panel"><span class="label">一、選擇學校工作區（全校成員共用同一份紀錄）</span>
@@ -551,9 +559,22 @@ function schoolPanel(){
       :`<p class="muted small">還沒有任何學校工作區。第一位成員建立後，其他成員打開此頁點選即可加入。</p>`}
     ${canWrite?`<div class="newschool"><input type="text" id="newSchool" placeholder="新學校名稱，例如：○○高級中學"><button class="btn ghost" id="createSchool">建立工作區</button></div>`:""}
     ${cur?`<div class="field"><label for="schoolName">工作區名稱</label><input type="text" id="schoolName" value="${esc(D().profile.name)}" ${editable()?"":"disabled"}></div>`:""}
-    ${BACKEND==="firebase"&&fbUser?`<div class="btnrow small"><span class="muted">已登入：</span><span id="whoami"></span><button class="btn quiet" id="fbLogout" style="padding:2px 12px">登出</button></div>`:""}
     ${cur&&hasLocal&&canWrite?`<div class="banner"><span>這台電腦上有先前單機版的盤點紀錄。</span><button class="btn quiet" id="importLocal">匯入到「${esc(D().profile.name)}」</button></div>`:""}
   </div>`;
+}
+function fbSchoolPanel(){
+  const who=`<div class="btnrow small"><span class="muted">已登入：</span><span id="whoami"></span><button class="btn quiet" id="fbLogout" style="padding:2px 12px">登出</button></div>`;
+  const dom=`<span class="mono">${esc(UI.sid)}</span>`;
+  if(!liveLoaded&&!wsMissing) return `<div class="panel"><span class="label">一、本校工作區</span><p class="muted">正在開啟本校工作區……</p>${who}</div>`;
+  if(wsMissing) return `<div class="panel"><span class="label">一、建立本校工作區</span>
+    <p>你是網域 ${dom} 第一位使用的成員。請輸入學校名稱建立工作區，之後同網域的帳號登入就會自動進入這個工作區。</p>
+    <div class="newschool"><input type="text" id="newSchool" placeholder="學校名稱，例如：國立花蓮高級中學" maxlength="80"><button class="btn" id="createSchool">建立本校工作區</button></div>${who}</div>`;
+  const hasLocal=Object.values(LOCAL.status).some(o=>Object.keys(o).length);
+  return `<div class="panel"><span class="label">一、本校工作區</span>
+    <p>網域 ${dom} 的成員登入後都會進入這個工作區，看到同一份盤點紀錄。</p>
+    <div class="field"><label for="schoolName">工作區名稱</label><input type="text" id="schoolName" value="${esc(D().profile.name)}" maxlength="80" ${editable()?"":"disabled"}></div>
+    ${hasLocal&&canWrite?`<div class="banner"><span>這台電腦上有先前單機版的盤點紀錄。</span><button class="btn quiet" id="importLocal">匯入到本校工作區</button></div>`:""}
+    ${who}</div>`;
 }
 function viewSetup(){
   const p=D().profile, a2=UI.plan==="a2", dis=editable()?"":"disabled";
@@ -777,14 +798,82 @@ function viewPlan(){
   </div>
 
   <div class="panel"><h2>帶走這份方案</h2>
-    <p class="small muted">「複製方案文字」可貼到 Word、雲端文件或 Email。「複製備份碼」保存目前整份紀錄，必要時可用「還原備份」寫回${shared()?"本校工作區（會覆寫相同指標的紀錄）":"這台電腦"}。</p>
-    <div class="btnrow"><button class="btn" id="copyPlan">複製方案文字</button><button class="btn ghost" id="copyBackup">複製備份碼</button>${editable()?`<button class="btn quiet" id="showRestore">還原備份</button>`:""}${MODE==="local"?`<button class="btn quiet" id="resetAll">清除本機資料</button>`:""}</div>
+    <ul class="qs small">
+      <li><b>下載 PDF</b>：包含各階段診斷表與年度優先工作，可列印或附在公文、會議資料中。</li>
+      <li><b>複製方案文字</b>：可直接貼到 Google 文件、Word、Email 或 LINE，再自行排版修改。</li>
+      <li><b>複製備份碼</b>：保存目前整份紀錄，必要時可用「還原備份」寫回${shared()?"本校工作區（會覆寫相同指標的紀錄）":"這台電腦"}。</li>
+    </ul>
+    <div class="btnrow"><button class="btn" id="downloadPdf">下載 PDF</button><button class="btn ghost" id="copyPlan">複製方案文字</button><button class="btn quiet" id="copyBackup">複製備份碼</button>${editable()?`<button class="btn quiet" id="showRestore">還原備份</button>`:""}${MODE==="local"?`<button class="btn quiet" id="resetAll">清除本機資料</button>`:""}</div>
     <textarea id="copyout" rows="8" hidden></textarea>
     <div id="restoreBox" hidden class="field"><label for="restoreIn">貼上備份碼</label><textarea id="restoreIn" rows="4"></textarea><div class="btnrow"><button class="btn" id="doRestore">載入</button></div></div>
     <div id="resetBox" hidden class="banner"><span>確定要清除這台電腦上的所有盤點、註記與方案嗎？此動作無法復原。</span><span class="btnrow"><button class="btn" id="doReset" style="background:var(--mark);border-color:var(--mark)">確定清除</button><button class="btn quiet" id="cancelReset">取消</button></span></div>
   </div>
   </section>`;
 }
+/* ---------- 下載 PDF ----------
+   另外排一份白底的 A4 報告，再用 html2pdf 轉成 PDF（中文用瀏覽器已載入的字型繪製）。
+   GitHub Pages 版直接下載；claude.ai 版經由 downloads 能力讓檢視者確認後存檔。 */
+const PDF_LIB = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
+function loadPdfLib(){
+  if(window.html2pdf) return Promise.resolve();
+  return loadPdfLib.p||(loadPdfLib.p=new Promise((res,rej)=>{
+    const s=document.createElement("script"); s.src=PDF_LIB; s.onload=res;
+    s.onerror=()=>{loadPdfLib.p=null;rej(new Error("load"));}; document.head.appendChild(s);
+  }));
+}
+function reportHTML(){
+  const list=stages(), f=focusStage(), d=D(), p=d.profile, picks=d.picks[UI.plan];
+  const keys=Object.keys(picks).filter(findItem);
+  const today=new Date().toLocaleDateString("zh-TW",{year:"numeric",month:"long",day:"numeric"});
+  const cell="border:1px solid #c9d1db;padding:5px 4px;text-align:center";
+  return `<div style="font-family:'Noto Sans TC','Microsoft JhengHei',sans-serif;color:#18212c;background:#fff;font-size:13px;line-height:1.65;width:680px;padding:4px 2px">
+    <div style="border-bottom:2px solid #1f4e8c;padding-bottom:10px;margin-bottom:14px">
+      <div style="font-size:12px;color:#596677">${esc(PLAN[UI.plan].doc)}</div>
+      <div style="font-family:'Noto Serif TC',serif;font-size:22px;font-weight:700">${esc(p.name||"本校")}・${esc(PLAN[UI.plan].name)} 自我診斷與年度改善方案</div>
+      <div style="font-size:12px;color:#596677">學校類型：${esc(p.school)}${UI.plan==="a2"?`｜角色：${esc(p.role)}｜選辦：${[p.g1&&"γ-1",p.g2&&"γ-2"].filter(Boolean).join("、")||"未填"}`:""}｜產出日期：${today}</div>
+    </div>
+    <div style="font-weight:700;font-size:15px;margin:4px 0 6px">一、各階段診斷</div>
+    <table style="border-collapse:collapse;width:100%;font-size:11px;table-layout:fixed"><col style="width:150px"><col style="width:58px">
+      <tr style="background:#e9edf2"><th style="${cell};text-align:left">階段</th><th style="${cell}">判讀</th>${DIMS.map(x=>`<th style="${cell}">${x}<br>${DIM[x].short}</th>`).join("")}<th style="${cell}">整體</th><th style="${cell}">已盤點</th></tr>
+      ${list.map((s,i)=>{const v=verdict(s);return `<tr${i===f.i?' style="background:#e3ebf6"':""}><td style="${cell};text-align:left">${STAGE[UI.plan][i].t}・${STAGE[UI.plan][i].pos}</td><td style="${cell}">${v.l}</td>
+        ${DIMS.map(x=>{const its=s.items.filter(it=>it.dim===x);return `<td style="${cell}">${its.length?pct(score(its).score):"—"}</td>`;}).join("")}
+        <td style="${cell};font-weight:700">${pct(v.all.score)}</td><td style="${cell}">${v.all.rated}/${v.all.total}</td></tr>`;}).join("")}
+    </table>
+    <p style="margin:8px 0 2px">建議聚焦：<b>${STAGE[UI.plan][f.i].t}・${STAGE[UI.plan][f.i].pos}</b>（表中以底色標示）</p>
+    <p style="margin:0;font-size:11px;color:#596677">落實比例＝（已落實×1＋部分落實×0.5）÷ 適用項目數；待確認、不適用不列入分母。「已穩定」參考門檻：整體 70% 以上且 KR 80% 以上。</p>
+    <div style="font-weight:700;font-size:15px;margin:16px 0 6px">二、年度優先改善工作</div>
+    ${keys.length?keys.map((k,i)=>{const {it,stage}=findItem(k),q=picks[k];
+      return `<div class="r-pick" style="border:1px solid #c9d1db;border-left:4px solid #1f4e8c;padding:8px 10px;margin-bottom:8px">
+        <div><b>${i+1}. ${esc(it.code)}</b>　<span style="color:#596677">${STAGE[UI.plan][stage].t}・${DIM[it.dim].short}</span></div>
+        <div>${esc(it.title)}</div>
+        <div style="font-size:12px;color:#3a4654">負責：${esc(q.owner)}｜期程：${esc(q.when)}｜預計佐證：${esc(q.evidence)}</div>
+        ${q.action?`<div style="font-size:12px">做法：${esc(q.action)}</div>`:""}</div>`;}).join("")
+      :`<p style="color:#596677">（尚未選定）</p>`}
+    <p style="margin-top:14px;font-size:11px;color:#596677">註：本診斷僅供校內盤點討論，不作排名；正式回報依核定表單辦理。指南為整合討論版，尚未核定。</p>
+  </div>`;
+}
+async function downloadPdf(btn){
+  const label=btn.textContent; btn.disabled=true; btn.textContent="正在產生 PDF…";
+  const box=document.createElement("div");
+  box.style.cssText="position:fixed;left:-10000px;top:0;background:#fff";
+  try{
+    await loadPdfLib();
+    box.innerHTML=reportHTML(); document.body.appendChild(box);
+    const name=`${D().profile.name||"本校"}_${PLAN[UI.plan].name}_診斷與改善方案.pdf`.replace(/[\/:*?"<>|]/g,"");
+    const worker=html2pdf().set({margin:[12,12,14,12],filename:name,image:{type:"jpeg",quality:.95},
+      html2canvas:{scale:2,backgroundColor:"#ffffff"},jsPDF:{unit:"mm",format:"a4",orientation:"portrait"},
+      pagebreak:{mode:["css","legacy"],avoid:[".r-pick","tr"]}}).from(box.firstElementChild);
+    const c=window.claude;
+    if(c&&typeof c.use==="function"){
+      const dl=await c.use("downloads");
+      if(!dl){toast("這個檢視無法下載檔案");return;}
+      await dl.save({filename:name,data:await worker.outputPdf("blob")}); toast("PDF 已下載");
+    }else{ await worker.save(); toast("PDF 已下載"); }
+  }catch(e){
+    toast(e&&e.code==="declined"?"已取消下載":e&&e.message==="load"?"無法載入 PDF 元件，請確認網路連線":"PDF 產生失敗，請稍後再試");
+  }finally{ box.remove(); btn.disabled=false; btn.textContent=label; }
+}
+
 function planText(){
   const list=stages(), f=focusStage(), d=D(), p=d.profile, picks=d.picks[UI.plan];
   const L=[];
@@ -849,7 +938,8 @@ app.addEventListener("click",e=>{
   if(t.dataset.pick){pick(t.dataset.pick,t.checked);render();return;}
   if(t.dataset.unpick){pick(t.dataset.unpick,false);render();return;}
   if(t.id==="autoPick"){autoPick();return;}
-  if(t.id==="copyPlan"){copy(planText(),"方案文字");return;}
+  if(t.id==="downloadPdf"){downloadPdf(t);return;}
+  if(t.id==="copyPlan"){copy(planText(),"方案文字（可貼到 Google 文件）");return;}
   if(t.id==="copyBackup"){const d=D();copy(JSON.stringify({v:2,data:{profile:d.profile,status:d.status,notes:d.notes,picks:d.picks}}),"備份碼");return;}
   if(t.id==="showRestore"){$("#restoreBox").hidden=!$("#restoreBox").hidden;return;}
   if(t.id==="doRestore"){

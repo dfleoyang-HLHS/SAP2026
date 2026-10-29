@@ -2,8 +2,9 @@
 // 這些值是公開的設定（不是密碼），可以放在公開的 repo；資料由 firestore.rules 保護。
 // firebase 留空（apiKey 為空字串）時，網頁會以單機模式運作。
 window.SAP_CONFIG = {
-  // 只允許這個網域的 Google 帳號登入（需與 firestore.rules 的網域一致）
-  allowedDomain: "hlhs.hlc.edu.tw",
+  // 只接受網域以此結尾的學校 Google 帳號（需與 firestore.rules 一致）。
+  // 同一個網域的成員會自動進入同一個學校工作區。
+  allowedSuffix: "edu.tw",
   firebase: {
   apiKey: "AIzaSyCKAJnUSfVMFy5r_iKXUUx-jqFZrGG68RI",
   authDomain: "sap2026-diag.firebaseapp.com",

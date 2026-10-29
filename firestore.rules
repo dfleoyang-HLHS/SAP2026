@@ -1,21 +1,34 @@
 rules_version = '2';
 
 // 數位前導指南診斷：Firestore 安全規則
-// 只有以 @hlhs.hlc.edu.tw 學校帳號登入（且 email 已驗證）的成員能讀寫。
-// 換學校使用時，修改 schoolMember() 裡的網域即可（點號要寫成 [.]）。
+// 每所學校一個工作區，工作區的 id 就是學校 Google 帳號的網域（例如 hlhs.hlc.edu.tw）。
+// 第一位登入的成員建立工作區後，同網域的帳號都能讀寫；其他網域的帳號看不到。
+// 只接受網域結尾為 edu.tw 的學校帳號；要改成其他結尾時，同時修改 config.js 的 allowedSuffix。
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    function schoolMember() {
+    function schoolAccount() {
       return request.auth != null
         && request.auth.token.email_verified == true
-        && request.auth.token.email.matches('.*@hlhs[.]hlc[.]edu[.]tw$');
+        && request.auth.token.email.lower().matches('.*@([a-z0-9-]+[.])*edu[.]tw$');
+    }
+    function userDomain() {
+      return request.auth.token.email.lower().split('@')[1];
+    }
+    function sameSchool(domain) {
+      return schoolAccount() && userDomain() == domain;
     }
 
-    // 學校工作區：成員可建立與修改，不可刪除（避免誤刪全校紀錄）
-    match /schools/{sid} {
-      allow read: if schoolMember();
-      allow create, update: if schoolMember()
+    // 學校工作區：同網域成員可建立與修改，網域不可改，不可刪除
+    match /schools/{domain} {
+      allow read: if sameSchool(domain);
+      allow create: if sameSchool(domain)
+        && request.resource.data.domain == domain
+        && request.resource.data.keys().size() <= 12
+        && request.resource.data.name is string
+        && request.resource.data.name.size() <= 80;
+      allow update: if sameSchool(domain)
+        && request.resource.data.domain == resource.data.domain
         && request.resource.data.keys().size() <= 12
         && request.resource.data.name is string
         && request.resource.data.name.size() <= 80;
@@ -23,11 +36,11 @@ service cloud.firestore {
 
       // 各指標狀態、佐證註記、年度方案
       match /{kind}/{docId} {
-        allow read: if schoolMember();
-        allow create, update: if schoolMember()
+        allow read: if sameSchool(domain);
+        allow create, update: if sameSchool(domain)
           && kind in ['status', 'notes', 'picks']
           && request.resource.data.keys().size() <= 8;
-        allow delete: if schoolMember() && kind in ['status', 'notes', 'picks'];
+        allow delete: if sameSchool(domain) && kind in ['status', 'notes', 'picks'];
       }
     }
 
