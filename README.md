@@ -22,14 +22,13 @@
 
 1. **建立試算表**：在 Google 雲端硬碟新增一份試算表，例如命名為「數位前導診斷紀錄」。
 2. **貼上程式**：在試算表選「擴充功能 → Apps Script」，把預設的程式碼全部刪掉，貼上本 repo 的 [`apps-script/Code.gs`](apps-script/Code.gs)，按儲存。
-3. **設定存取碼**：在 Apps Script 左側點「專案設定（齒輪）」→ 最下方「指令碼屬性」→「新增指令碼屬性」，屬性填 `ACCESS_CODE`，值填一組只給校內成員的存取碼，例如 `SAP2026-1029`。
+3. **設定存取碼**：在 Apps Script 左側點「專案設定（齒輪）」→ 最下方「指令碼屬性」→「新增指令碼屬性」，屬性填 `ACCESS_CODE`，值填一組只給校內成員的存取碼，例如 `hlhs-2026-xxxx`。**不要把實際使用的存取碼寫進本 repo**（repo 是公開的）。
 4. **部署**：右上角「部署 → 新增部署作業」→ 類型選「網頁應用程式」：
    - 執行身分：**我**
-   - 誰可以存取：**所有人**（網頁由 GitHub Pages 呼叫，需要這個設定；資料由存取碼保護）
+   - 誰可以存取：**所有人**（網頁由 GitHub Pages 呼叫，需要這個設定；資料由存取碼保護）。選「只限本網域使用者」會被導向登入頁，網頁會顯示「目前無法連線到 Google 試算表」；選單裡沒有「所有人」時，代表學校 Workspace 管理員關閉了此選項。
    按「部署」，第一次會要求授權，依畫面允許即可。完成後複製「網頁應用程式網址」（`https://script.google.com/macros/s/…/exec`）。
 5. **填入網址**：在 GitHub 編輯本 repo 的 [`config.js`](config.js)，把網址貼進 `sheetApi: ""` 的引號中並 commit。一兩分鐘後網站就會改為試算表模式。
-https://script.google.com/a/macros/hlhs.hlc.edu.tw/s/AKfycbw6ENDmkWqZ4D4LfVoSn5aB-IUKbUe-2RehxhUmhhgrl80QQjShMqpxit1liI4nweUX/exec
-
+6. **確認部署**：用瀏覽器直接開啟該網址，看到 `{"ok":true,"service":"數位前導指南診斷"}` 即表示可以連線。
 7. **通知成員**：把網址和存取碼告訴校內成員。第一次開啟時輸入存取碼和自己的名字即可。
 
 之後修改 `Code.gs` 時，要在「部署 → 管理部署作業」編輯原部署並選「新版本」，網址才會維持不變。
