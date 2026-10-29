@@ -1,5 +1,15 @@
-// 部署 Google Apps Script 後，把「網頁應用程式」網址（https://script.google.com/macros/s/.../exec）貼在下面。
-// 留空表示不接試算表，網頁會以單機模式運作。
+// 在 Firebase 主控台建立網頁應用程式後，把「firebaseConfig」的內容貼到 firebase 欄位。
+// 這些值是公開的設定（不是密碼），可以放在公開的 repo；資料由 firestore.rules 保護。
+// firebase 留空（apiKey 為空字串）時，網頁會以單機模式運作。
 window.SAP_CONFIG = {
-  sheetApi: "https://script.google.com/macros/s/AKfycbw6ENDmkWqZ4D4LfVoSn5aB-IUKbUe-2RehxhUmhhgrl80QQjShMqpxit1liI4nweUX/exec"
+  // 只允許這個網域的 Google 帳號登入（需與 firestore.rules 的網域一致）
+  allowedDomain: "hlhs.hlc.edu.tw",
+  firebase: {
+    apiKey: "",
+    authDomain: "",
+    projectId: "",
+    storageBucket: "",
+    messagingSenderId: "",
+    appId: ""
+  }
 };

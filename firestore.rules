@@ -1,0 +1,39 @@
+rules_version = '2';
+
+// 數位前導指南診斷：Firestore 安全規則
+// 只有以 @hlhs.hlc.edu.tw 學校帳號登入（且 email 已驗證）的成員能讀寫。
+// 換學校使用時，修改 schoolMember() 裡的網域即可（點號要寫成 [.]）。
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function schoolMember() {
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email.matches('.*@hlhs[.]hlc[.]edu[.]tw$');
+    }
+
+    // 學校工作區：成員可建立與修改，不可刪除（避免誤刪全校紀錄）
+    match /schools/{sid} {
+      allow read: if schoolMember();
+      allow create, update: if schoolMember()
+        && request.resource.data.keys().size() <= 12
+        && request.resource.data.name is string
+        && request.resource.data.name.size() <= 80;
+      allow delete: if false;
+
+      // 各指標狀態、佐證註記、年度方案
+      match /{kind}/{docId} {
+        allow read: if schoolMember();
+        allow create, update: if schoolMember()
+          && kind in ['status', 'notes', 'picks']
+          && request.resource.data.keys().size() <= 8;
+        allow delete: if schoolMember() && kind in ['status', 'notes', 'picks'];
+      }
+    }
+
+    // 其他位置一律拒絕
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

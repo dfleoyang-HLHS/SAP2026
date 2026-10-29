@@ -13,37 +13,56 @@
 
 | 情況 | 資料位置 |
 |---|---|
-| `config.js` 的 `sheetApi` 留空 | 單機模式：只存在各人的瀏覽器 |
-| `sheetApi` 填入 Apps Script 網址 | 學校的 Google 試算表：全校成員共用，約每 15 秒自動同步 |
+| `config.js` 的 `firebase.apiKey` 留空 | 單機模式：只存在各人的瀏覽器 |
+| 填入 Firebase 設定 | Firebase Firestore 雲端資料庫：成員用學校 Google 帳號登入，全校即時共用 |
 
-## 接上 Google 試算表
+只有 `@hlhs.hlc.edu.tw` 的帳號能讀寫，由 [`firestore.rules`](firestore.rules) 在伺服器端把關；網頁上的網域檢查只是提示。
 
-由一位管理者用學校的 Google 帳號做一次即可。
+## 接上 Firebase（管理者做一次）
 
-1. **建立試算表**：在 Google 雲端硬碟新增一份試算表，例如命名為「數位前導診斷紀錄」。
-2. **貼上程式**：在試算表選「擴充功能 → Apps Script」，把預設的程式碼全部刪掉，貼上本 repo 的 [`apps-script/Code.gs`](apps-script/Code.gs)，按儲存。
-3. **設定存取碼**：在 Apps Script 左側點「專案設定（齒輪）」→ 最下方「指令碼屬性」→「新增指令碼屬性」，屬性填 `ACCESS_CODE`，值填一組只給校內成員的存取碼，例如 `hlhs-2026-xxxx`。**不要把實際使用的存取碼寫進本 repo**（repo 是公開的）。
-4. **部署**：右上角「部署 → 新增部署作業」→ 類型選「網頁應用程式」：
-   - 執行身分：**我**
-   - 誰可以存取：**所有人**（網頁由 GitHub Pages 呼叫，需要這個設定；資料由存取碼保護）。選「只限本網域使用者」會被導向登入頁，網頁會顯示「目前無法連線到 Google 試算表」；選單裡沒有「所有人」時，代表學校 Workspace 管理員關閉了此選項。
-   按「部署」，第一次會要求授權，依畫面允許即可。完成後複製「網頁應用程式網址」（`https://script.google.com/macros/s/…/exec`）。
-5. **填入網址**：在 GitHub 編輯本 repo 的 [`config.js`](config.js)，把網址貼進 `sheetApi: ""` 的引號中並 commit。一兩分鐘後網站就會改為試算表模式。
-   https://script.google.com/macros/s/AKfycbw6ENDmkWqZ4D4LfVoSn5aB-IUKbUe-2RehxhUmhhgrl80QQjShMqpxit1liI4nweUX/exec
-7. **確認部署**：用瀏覽器直接開啟該網址，看到 `{"ok":true,"service":"數位前導指南診斷"}` 即表示可以連線。
-8. **通知成員**：把網址和存取碼告訴校內成員。第一次開啟時輸入存取碼和自己的名字即可。
+> 若學校帳號無法使用 Firebase 主控台，可以用個人 Gmail 帳號建立專案；成員仍然是用學校帳號登入，規則一樣只放行學校網域。
 
-之後修改 `Code.gs` 時，要在「部署 → 管理部署作業」編輯原部署並選「新版本」，網址才會維持不變。
+### 1. 建立專案
+1. 開啟 https://console.firebase.google.com/ →「建立專案」，名稱例如 `sap2026-diag`。Google Analytics 可以關閉。
+2. 進入專案後，點首頁的 **`</>`（網頁）** 圖示新增網頁應用程式，暱稱例如 `diag-web`，**不用**勾選 Firebase Hosting。
+3. 畫面會顯示一段 `const firebaseConfig = { apiKey: "...", authDomain: "...", ... }`，先把它複製起來。
 
-### 試算表裡的內容
+### 2. 開啟 Google 登入
+1. 左側「建構 → Authentication」→「開始使用」。
+2. 「Sign-in method（登入方式）」→ 新增 **Google** → 啟用 → 選擇專案支援電子郵件 → 儲存。
+3. 「Settings（設定）」→「授權網域」→「新增網域」，加入 **`dfleoyang-hlhs.github.io`**。
 
-所有紀錄在「docs」工作表，一列一筆（學校工作區、各指標狀態、註記、年度方案）。`data` 欄是 JSON，`by` 是標記者自填的名字，`deleted` 為 TRUE 表示已刪除。請不要手動修改這張工作表；需要報表時可以另開工作表引用它。
+### 3. 建立資料庫並設定規則
+1. 左側「建構 → Firestore Database」→「建立資料庫」，位置建議選 `asia-east1（台灣）`，模式選「正式版（production）」。
+2. 進入「規則」分頁，把內容全部換成本 repo 的 [`firestore.rules`](firestore.rules)，按「發布」。
 
-### 安全性說明
+### 4. 填入設定
+在 GitHub 編輯 [`config.js`](config.js)，把第 1 步複製的 `firebaseConfig` 各欄位填進 `firebase: { ... }`，commit 後一兩分鐘網站就會出現「用學校 Google 帳號登入」。
 
-- 存取碼是所有成員共用的一組密碼，不是個人帳號；知道存取碼的人都能讀寫所有學校工作區的紀錄。
-- 存取碼外流時，到「指令碼屬性」改掉 `ACCESS_CODE`，再把新的存取碼告訴成員。
-- 「你的名字」由成員自填，只作顯示，不能當成身分驗證。
-- 試算表的擁有者可以在 Google 雲端硬碟的「版本記錄」還原誤改的資料。
+`firebaseConfig` 是公開的識別資訊（不是密碼），放在公開 repo 沒有問題；真正的保護是第 3 步的安全規則。
+
+### 5. 通知成員
+把網址告訴校內成員即可，不需要存取碼。第一次開啟時按「用學校 Google 帳號登入」，標記的項目會顯示登入者的名字。
+
+## 疑難排解
+
+| 狀況 | 原因與處理 |
+|---|---|
+| 登入時出現「這個網址還沒加入 Firebase 的授權網域」 | 第 2 步的「授權網域」沒有加入 `dfleoyang-hlhs.github.io` |
+| 登入後出現「你的帳號沒有讀取權限」 | 第 3 步的規則還沒發布，或登入的不是學校帳號 |
+| 學校帳號登入時被 Google 擋下（應用程式遭封鎖） | 學校 Workspace 限制第三方應用程式，請資訊組在管理控制台允許此 Firebase 專案 |
+| 顯示「單機模式」 | `config.js` 的 `apiKey` 還是空的，或瀏覽器擋住了 gstatic.com 的程式庫 |
+
+## 換學校使用
+
+同時修改兩個地方的網域：`config.js` 的 `allowedDomain`，以及 `firestore.rules` 裡 `schoolMember()` 的網域（點號寫成 `[.]`），再重新發布規則。
+
+## 安全性與資料說明
+
+- 學校網域內的任何人都能讀寫所有學校工作區的紀錄，不能刪除工作區本身。
+- 標記紀錄會存登入者的顯示名稱與時間，不存 email。
+- 免費方案（Spark）每天可讀取 5 萬次、寫入 2 萬次，一所學校使用綽綽有餘。
+- 資料可以在 Firebase 主控台的 Firestore 頁面查看與匯出。
 
 ## 注意
 
